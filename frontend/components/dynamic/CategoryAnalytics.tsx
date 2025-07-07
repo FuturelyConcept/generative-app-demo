@@ -6,8 +6,8 @@ import { BarChart3, TrendingUp, Package, AlertTriangle } from 'lucide-react';
 interface CategoryData {
   name: string;
   product_count: number;
-  total_value: number;
-  low_stock_count: number;
+  total_inventory_value: number;
+  low_stock_alerts: number;
   average_price: number;
 }
 
@@ -78,9 +78,9 @@ export function CategoryAnalytics({
       case 'product_count':
         return category.product_count;
       case 'total_inventory_value':
-        return category.total_value;
+        return category.total_inventory_value;
       case 'low_stock_alerts':
-        return category.low_stock_count;
+        return category.low_stock_alerts;
       default:
         return 0;
     }

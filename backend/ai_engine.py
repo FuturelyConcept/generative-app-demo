@@ -143,9 +143,10 @@ class AIRuntimeEngine:
         """
         
         print(f"🤖 AI Engine processing: {method} {path} for role '{user_role}'")
+        print(f"DEBUG: Received headers: {headers}")
         
         # Check if this is a UI request (frontend wants UI instructions)
-        is_ui_request = headers.get('X-UI-Request') == 'true'
+        is_ui_request = headers.get('x-ui-request', '').lower() == 'true'
         if is_ui_request:
             print("🎨 UI Request detected - will include UI generation instructions")
         
@@ -196,6 +197,7 @@ class AIRuntimeEngine:
         elif request_intent["action"] == "get_demo_info":
             return await self._handle_demo_info()
         elif request_intent["action"] == "get_categories":
+            print(f"DEBUG: handle_request is about to call _handle_get_categories for action: {request_intent['action']}")
             return await self._handle_get_categories(user_role, is_ui_request)
         else:
             return await self._handle_unknown_request(path, method, user_role, data)
@@ -410,22 +412,26 @@ class AIRuntimeEngine:
                 })
         
         elif view_type == "categories":
+            print(f"DEBUG: _generate_ui_instructions - Handling categories view for role: {user_role}")
+            print(f"DEBUG: _generate_ui_instructions - Permissions for categories: {permissions}")
             # Simple categories table - keep it simple for concept demo
             if "view_categories" in permissions:
+                print("DEBUG: _generate_ui_instructions - 'view_categories' permission found. Adding analytics component.")
                 ui_config["components"].append({
-                    "id": "categories-table",
-                    "type": "table", 
+                    "id": "categories-analytics",
+                    "type": "analytics", 
                     "props": {
-                        "title": "Product Categories",
+                        "title": "Product Categories Analytics",
                         "data": data.get("categories", []),
-                        "columns": ["name", "product_count"],
-                        "actions": []
+                        "metrics": ["product_count", "total_inventory_value", "low_stock_alerts"]
                     },
                     "data": data.get("categories", []),
                     "permissions": ["view_categories"],
                     "visible_to": ["manager", "admin"],
                     "position": {"section": "main", "order": 1}
                 })
+            else:
+                print("DEBUG: _generate_ui_instructions - 'view_categories' permission NOT found. No analytics component added.")
         
         # Add admin dashboard components
         if user_role == "admin" and data.get("admin_insights"):
@@ -640,6 +646,7 @@ class AIRuntimeEngine:
     
     async def _handle_get_categories(self, user_role: str, is_ui_request: bool = False) -> Dict:
         """AI generates product categories response based on policies"""
+        print(f"DEBUG: _handle_get_categories called. is_ui_request: {is_ui_request}")
         
         # Check permissions from loaded policies
         access_policies = self.policies.get("access_policies", {})
@@ -759,7 +766,9 @@ class AIRuntimeEngine:
         
         # Add UI generation instructions if this is a UI request
         if is_ui_request:
-            response["ui_instructions"] = self._generate_ui_instructions(user_role, "categories", response)
+            ui_instructions = self._generate_ui_instructions(user_role, "categories", response)
+            print(f"DEBUG: Generated UI instructions for categories: {ui_instructions}")
+            response["ui_instructions"] = ui_instructions
         
         return response
     

@@ -21,6 +21,7 @@ export default function Home() {
   const loadAIUI = async () => {
     setIsLoading(true);
     setError(null);
+    console.log(`loadAIUI: Fetching UI for role: ${currentRole}, view: ${activeView}`);
     
     try {
       let response: AIUIResponse;
@@ -30,7 +31,9 @@ export default function Home() {
           response = await aiUIClient.getProductsUI(currentRole);
           break;
         case 'categories':
+          console.log("loadAIUI: Calling getCategoriesUI...");
           response = await aiUIClient.getCategoriesUI(currentRole);
+          console.log("loadAIUI: getCategoriesUI returned:", response);
           break;
         case 'context':
           response = await aiUIClient.getUserContextUI(currentRole);
@@ -40,6 +43,7 @@ export default function Home() {
       }
       
       setUIResponse(response);
+      console.log("loadAIUI: UI Response set:", response);
     } catch (error) {
       console.error('Failed to load AI UI:', error);
       setError(`Failed to load AI UI: ${error}`);
@@ -79,6 +83,7 @@ export default function Home() {
   };
 
   const handleViewChange = (newView: string) => {
+    console.log(`handleViewChange: Switching to view: ${newView}`);
     setActiveView(newView);
     // Clear UI response when switching to non-AI views like API tester
     if (newView === 'api') {

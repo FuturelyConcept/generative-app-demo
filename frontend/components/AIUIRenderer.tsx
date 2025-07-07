@@ -34,9 +34,8 @@ export function AIUIRenderer({
   
   const renderComponent = (component: UIComponent) => {
     const key = component.id;
-    const props = {
+    const componentProps = {
       ...component.props,
-      key,
       userRole,
       theme,
       onAction: (action: string, data?: any) => {
@@ -47,25 +46,25 @@ export function AIUIRenderer({
     switch (component.type) {
       case 'table':
         if (component.id === 'products-table') {
-          return <ProductTable {...props} />;
+          return <ProductTable key={key} {...componentProps} />;
         }
         return <div key={key}>Generic Table Component</div>;
         
       case 'form':
         if (component.id === 'add-product-form') {
-          return <ProductForm {...props} />;
+          return <ProductForm key={key} {...componentProps} />;
         }
         return <div key={key}>Generic Form Component</div>;
         
       case 'analytics':
         if (component.id === 'categories-analytics') {
-          return <CategoryAnalytics {...props} />;
+          return <CategoryAnalytics key={key} {...componentProps} />;
         }
         return <div key={key}>Generic Analytics Component</div>;
         
       case 'dashboard':
         if (component.id === 'admin-dashboard') {
-          return <AdminDashboard {...props} />;
+          return <AdminDashboard key={key} {...componentProps} />;
         }
         return <div key={key}>Generic Dashboard Component</div>;
         

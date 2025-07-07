@@ -15,8 +15,9 @@ interface APITesterProps {
   currentRole: string;
 }
 
-const PRESET_ENDPOINTS = [
+const PRESET_ENDPOINTS_INITIAL = [
   { path: '/api/products', method: 'GET', description: 'Get products (role-based)' },
+  { path: '/api/products/p1', method: 'DELETE', description: 'Delete product (admin only)' },
   { path: '/api/user-context/admin', method: 'GET', description: 'Get admin context' },
   { path: '/api/user-context/manager', method: 'GET', description: 'Get manager context' },
   { path: '/api/user-context/viewer', method: 'GET', description: 'Get viewer context' },
@@ -34,37 +35,36 @@ const SAMPLE_PRODUCT = {
 };
 
 export default function APITester({ currentRole }: APITesterProps) {
+  const [presetEndpoints, setPresetEndpoints] = useState(PRESET_ENDPOINTS_INITIAL);
   const [customEndpoint, setCustomEndpoint] = useState('');
   const [customMethod, setCustomMethod] = useState('GET');
   const [customData, setCustomData] = useState('');
   const [results, setResults] = useState<APITestResult[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const addResult = (endpoint: string, method: string, status: 'success' | 'error', response: any) => {
-    const result: APITestResult = {
-      endpoint,
-      method,
-      status,
-      response,
-      timestamp: new Date().toISOString()
-    };
-    setResults(prev => [result, ...prev.slice(0, 9)]); // Keep last 10 results
+  const handlePresetPathChange = (index: number, newPath: string) => {
+    setPresetEndpoints(prev => {
+      const newEndpoints = [...prev];
+      newEndpoints[index] = { ...newEndpoints[index], path: newPath };
+      return newEndpoints;
+    });
   };
 
-  const testPresetEndpoint = async (path: string, method: string) => {
+  const testPresetEndpoint = async (index: number) => {
+    const endpoint = presetEndpoints[index];
     setLoading(true);
     try {
       let response;
       
-      if (method === 'POST' && path === '/api/products') {
-        response = await aiClient.testArbitraryEndpoint(path, method, currentRole, SAMPLE_PRODUCT);
+      if (endpoint.method === 'POST' && endpoint.path === '/api/products') {
+        response = await aiClient.testArbitraryEndpoint(endpoint.path, endpoint.method, currentRole, SAMPLE_PRODUCT);
       } else {
-        response = await aiClient.testArbitraryEndpoint(path, method, currentRole);
+        response = await aiClient.testArbitraryEndpoint(endpoint.path, endpoint.method, currentRole);
       }
       
-      addResult(path, method, 'success', response);
+      addResult(endpoint.path, endpoint.method, 'success', response);
     } catch (error) {
-      addResult(path, method, 'error', { error: error instanceof Error ? error.message : 'Unknown error' });
+      addResult(endpoint.path, endpoint.method, 'error', { error: error instanceof Error ? error.message : 'Unknown error' });
     } finally {
       setLoading(false);
     }
@@ -120,27 +120,37 @@ export default function APITester({ currentRole }: APITesterProps) {
       <div className="bg-white rounded-lg shadow p-4">
         <h3 className="font-semibold mb-3">🎯 Preset Endpoints</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {PRESET_ENDPOINTS.map((endpoint, index) => (
-            <button
+          {presetEndpoints.map((endpoint, index) => (
+            <div
               key={index}
-              onClick={() => testPresetEndpoint(endpoint.path, endpoint.method)}
-              disabled={loading}
-              className="p-3 text-left border rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="p-3 border rounded-lg bg-white shadow-sm"
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-mono text-sm text-blue-600">{endpoint.method} {endpoint.path}</div>
-                  <div className="text-xs text-gray-600">{endpoint.description}</div>
-                </div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-mono text-sm text-blue-600">{endpoint.method}</div>
                 <span className={`px-2 py-1 rounded text-xs font-medium ${
                   endpoint.method === 'GET' ? 'bg-green-100 text-green-800' :
                   endpoint.method === 'POST' ? 'bg-blue-100 text-blue-800' :
+                  endpoint.method === 'DELETE' ? 'bg-red-100 text-red-800' :
                   'bg-gray-100 text-gray-800'
                 }`}>
                   {endpoint.method}
                 </span>
               </div>
-            </button>
+              <input
+                type="text"
+                value={endpoint.path}
+                onChange={(e) => handlePresetPathChange(index, e.target.value)}
+                className="w-full font-mono text-sm text-gray-800 border border-gray-300 rounded px-2 py-1 mb-2 bg-gray-50 focus:border-blue-500 focus:ring-blue-500"
+              />
+              <div className="text-xs text-gray-600 mb-2">{endpoint.description}</div>
+              <button
+                onClick={() => testPresetEndpoint(index)}
+                disabled={loading}
+                className="w-full px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                Test API
+              </button>
+            </div>
           ))}
         </div>
 
@@ -149,14 +159,14 @@ export default function APITester({ currentRole }: APITesterProps) {
           <h4 className="font-medium mb-2">Special Actions (Role-dependent)</h4>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => testPresetEndpoint('/api/products', 'POST')}
+              onClick={() => testPresetEndpoint(presetEndpoints.findIndex(e => e.method === 'POST' && e.path === '/api/products'))}
               disabled={loading}
               className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm hover:bg-blue-200 disabled:opacity-50"
             >
               POST Add Product
             </button>
             <button
-              onClick={() => testPresetEndpoint('/api/products/p1', 'DELETE')}
+              onClick={() => testPresetEndpoint(presetEndpoints.findIndex(e => e.method === 'DELETE' && e.path.startsWith('/api/products/')))}
               disabled={loading}
               className="px-3 py-1 bg-red-100 text-red-800 rounded text-sm hover:bg-red-200 disabled:opacity-50"
             >

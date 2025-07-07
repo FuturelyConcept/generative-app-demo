@@ -75,16 +75,22 @@ export class AIRuntimeClient {
     this.baseUrl = baseUrl;
   }
 
-  private async makeRequest(path: string, options: RequestInit = {}): Promise<any> {
+  private async makeRequest(path: string, options: RequestInit = {}, isUiRequest: boolean = false): Promise<any> {
     const url = `${this.baseUrl}${path}`;
     
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    if (isUiRequest) {
+      headers['X-UI-Request'] = 'true';
+    }
+
     try {
       const response = await fetch(url, {
         ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers,
       });
 
       const data = await response.json();
@@ -108,7 +114,7 @@ export class AIRuntimeClient {
       headers: {
         'X-User-Role': userRole,
       },
-    });
+    }, true);
   }
 
   /**
@@ -153,7 +159,7 @@ export class AIRuntimeClient {
   /**
    * Test any arbitrary endpoint (demonstrates AI's dynamic handling)
    */
-  async testArbitraryEndpoint(path: string, method: string = 'GET', userRole: string = 'viewer', data?: any): Promise<AIResponse> {
+  async testArbitraryEndpoint(path: string, method: string = 'GET', userRole: string = 'viewer', data?: any, isUiRequest: boolean = false): Promise<AIResponse> {
     const options: RequestInit = {
       method,
       headers: {
@@ -165,7 +171,7 @@ export class AIRuntimeClient {
       options.body = JSON.stringify(data);
     }
 
-    return this.makeRequest(path, options);
+    return this.makeRequest(path, options, isUiRequest);
   }
 
   /**
