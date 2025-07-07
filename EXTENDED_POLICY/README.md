@@ -1,6 +1,6 @@
-# TEST Directory - Policy-Driven Feature Demo
+# Extended Policy Demonstration
 
-This directory contains **NEW POLICY FILES** that demonstrate how to add complete new functionality to the AI Runtime Engine using **only policy changes** - no code modifications required!
+This folder contains additional policy files that demonstrate how to extend the AI Runtime Engine with new features **without writing any code**.
 
 ## 🎯 **What This Demonstrates**
 
@@ -28,53 +28,49 @@ Adding a **Product Categories** feature that:
 - Updates request analysis prompts
 - Defines response templates
 
-## 🚀 **Demo Instructions**
+## 🚀 How to Use
 
-### **Step 1: Test Current Functionality**
-With the app running, verify current state:
+### Basic Demo (Core Features Only)
 ```bash
-# This works (existing functionality)
-curl -H "X-User-Role: admin" http://localhost:8000/api/products
-
-# This should return "unknown" (doesn't exist yet)
-curl -H "X-User-Role: admin" http://localhost:8000/api/categories
-```
-
-### **Step 2: Add New Feature via Policies**
-Copy the new policy files while explaining the concept:
-```bash
-# Navigate to project root
-cd /path/to/generative-app-demo
-
-# Copy new policy files
-cp TEST/categories_feature.yaml POLICIES/
-cp TEST/extended_ai_prompts.yaml POLICIES/
-
-# Show what you just added
-ls -la POLICIES/
-```
-
-### **Step 3: Restart to Apply New Policies**
-```bash
-# Kill existing processes
-pkill -f "next\|uvicorn\|python.*main.py"
-
-# Restart with new policies
 ./start-full-demo.sh
 ```
 
-### **Step 4: Test New Functionality**
+### Extended Demo (Core + Enhanced Features)
 ```bash
-# Test new categories endpoint (should work now!)
-curl -H "X-User-Role: admin" http://localhost:8000/api/categories
-
-# Test role-based access
-curl -H "X-User-Role: manager" http://localhost:8000/api/categories  # Should work
-curl -H "X-User-Role: viewer" http://localhost:8000/api/categories   # Should be denied
-
-# Test method restrictions
-curl -X POST -H "X-User-Role: admin" http://localhost:8000/api/categories  # Should be denied (GET only)
+./start-full-demo.sh EXTEND_POLICY
 ```
+
+## 📋 What Happens
+
+When you run with `EXTEND_POLICY`:
+
+1. **Backup Created**: Original policies are backed up to `POLICIES_BACKUP/`
+2. **Policies Loaded**: All `.yaml` files from `EXTEND_POLICY/` are copied to `POLICIES/`
+3. **Enhanced Features**: AI Runtime Engine loads the new policies and gains new capabilities
+4. **Auto Cleanup**: When you stop the demo (Ctrl+C), original policies are restored
+
+## 🎯 Policy Files Available
+
+### `categories_feature.yaml`
+Adds comprehensive category management and analytics:
+- **Admin**: Full category analytics dashboard with charts and insights
+- **Manager**: Business-focused category performance metrics  
+- **Viewer**: Basic category information table
+- **Features**: Sorting, filtering, AI-generated insights, real-time updates
+
+### `category_ui_policies.yaml`
+Enhanced UI components for category management:
+- Role-based UI themes and layouts
+- Advanced filtering and sorting capabilities
+- AI-generated business recommendations
+- Export functionality and real-time updates
+
+### `extended_ai_prompts.yaml`
+Extended AI capabilities:
+- Teaches AI about category analysis
+- Updates request analysis prompts
+- Defines new permission structures
+- AI response templates
 
 ## 🎭 **Expected Results**
 

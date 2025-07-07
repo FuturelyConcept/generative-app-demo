@@ -1,6 +1,20 @@
 #!/bin/bash
 echo "🚀 Starting Complete AI Runtime Engine Demo (Backend + Frontend)..."
 
+# Check if extended policies argument is provided
+EXTENDED_POLICY_DIR=""
+if [ "$1" != "" ]; then
+    EXTENDED_POLICY_DIR="$1"
+    echo "🎯 Extended Policy Mode: Loading policies from $EXTENDED_POLICY_DIR/"
+    
+    if [ ! -d "$EXTENDED_POLICY_DIR" ]; then
+        echo "❌ Extended policy directory '$EXTENDED_POLICY_DIR' not found."
+        echo "💡 Usage: ./start-full-demo.sh [EXTENDED_POLICY_DIR]"
+        echo "💡 Example: ./start-full-demo.sh EXTENDED_POLICY"
+        exit 1
+    fi
+fi
+
 # Check Python version
 if ! python3 --version >/dev/null 2>&1; then
     echo "❌ Python 3 required. Please install Python 3.7 or later."
@@ -17,6 +31,29 @@ fi
 if [ -f ".env.local" ]; then
     echo "🔧 Copying .env.local to backend/.env..."
     cp .env.local backend/.env
+fi
+
+# Handle extended policies if provided
+if [ "$EXTENDED_POLICY_DIR" != "" ]; then
+    echo "📋 Loading extended policies from $EXTENDED_POLICY_DIR/..."
+    
+    # Backup existing policies
+    if [ -d "POLICIES_BACKUP" ]; then
+        rm -rf POLICIES_BACKUP
+    fi
+    cp -r POLICIES POLICIES_BACKUP
+    
+    # Copy extended policies to POLICIES directory
+    for policy_file in "$EXTENDED_POLICY_DIR"/*.yaml; do
+        if [ -f "$policy_file" ]; then
+            filename=$(basename "$policy_file")
+            echo "  ✅ Loading $filename"
+            cp "$policy_file" "POLICIES/$filename"
+        fi
+    done
+    
+    echo "📋 Extended policies loaded! Demo will include enhanced features."
+    echo ""
 fi
 
 echo "🧠 Starting AI Runtime Engine Backend..."
@@ -107,8 +144,35 @@ echo "  2. Switch between user roles"
 echo "  3. Watch the entire app adapt instantly!"
 echo "  4. Test the API tester with any endpoint"
 echo ""
+if [ "$EXTENDED_POLICY_DIR" != "" ]; then
+    echo "🚀 Extended Features Active:"
+    echo "  • Additional policy files loaded from $EXTENDED_POLICY_DIR/"
+    echo "  • Enhanced AI capabilities and UI components"
+    echo "  • Try new features based on loaded policies"
+    echo ""
+fi
+echo "💡 Pro Tip:"
+echo "  • Run with: ./start-full-demo.sh EXTENDED_POLICY"
+echo "  • This loads enhanced features from EXTENDED_POLICY/ folder"
+echo "  • Demonstrates policy-driven feature addition"
+echo ""
 echo "Press Ctrl+C to stop both servers..."
 
-# Wait for interrupt
-trap 'echo "🛑 Stopping AI Runtime Engine Demo..."; kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit 0' INT
+# Wait for interrupt with cleanup
+cleanup() {
+    echo "🛑 Stopping AI Runtime Engine Demo..."
+    kill $BACKEND_PID $FRONTEND_PID 2>/dev/null
+    
+    # Restore original policies if extended policies were used
+    if [ "$EXTENDED_POLICY_DIR" != "" ] && [ -d "POLICIES_BACKUP" ]; then
+        echo "🔄 Restoring original policies..."
+        rm -rf POLICIES
+        mv POLICIES_BACKUP POLICIES
+        echo "✅ Original policies restored"
+    fi
+    
+    exit 0
+}
+
+trap cleanup INT
 wait $BACKEND_PID

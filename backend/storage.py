@@ -115,8 +115,9 @@ class JSONStorage:
         products = self.get_products()
         users = self.get_users()
         
-        total_value = sum(p.get('price', 0) * p.get('stock', 0) for p in products)
-        low_stock_items = [p for p in products if p.get('stock', 0) < 20]
+        # Ensure price and stock are numbers (convert from string if needed)
+        total_value = sum(float(p.get('price', 0)) * int(p.get('stock', 0)) for p in products)
+        low_stock_items = [p for p in products if int(p.get('stock', 0)) < 20]
         
         return {
             "total_products": len(products),

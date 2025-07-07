@@ -1,0 +1,195 @@
+# Category UI Policies - Dynamic Category Management Feature
+# Drop this file to instantly add category analytics and management to the AI Runtime Engine
+
+categories_feature:
+  enabled: true
+  description: "Advanced category analytics and management system"
+  
+  # UI Component Definitions
+  ui_components:
+    analytics_dashboard:
+      type: "analytics"
+      title: "Category Performance Analytics"
+      enabled: true
+      features:
+        - "product_count_by_category"
+        - "inventory_value_analysis"
+        - "low_stock_alerts"
+        - "category_performance_trends"
+        - "average_price_analysis"
+    
+    category_table:
+      type: "table"
+      title: "Category Management"
+      enabled: true
+      columns:
+        - name: "category_name"
+          label: "Category"
+          sortable: true
+        - name: "product_count"
+          label: "Products"
+          sortable: true
+        - name: "total_value"
+          label: "Total Value"
+          format: "currency"
+          sortable: true
+        - name: "avg_price"
+          label: "Avg Price"
+          format: "currency"
+          sortable: true
+        - name: "low_stock_count"
+          label: "Low Stock"
+          highlight: "warning"
+          sortable: true
+    
+    category_filters:
+      type: "filter"
+      enabled: true
+      options:
+        - "all_categories"
+        - "high_value"
+        - "low_stock"
+        - "popular"
+
+  # Role-based Access Control
+  access_control:
+    admin:
+      permissions:
+        - "view_all_categories"
+        - "view_detailed_analytics"
+        - "manage_categories"
+        - "export_data"
+      ui_elements:
+        - "analytics_dashboard"
+        - "category_table"
+        - "category_filters"
+        - "export_buttons"
+        - "category_management_tools"
+      insights:
+        - "revenue_by_category"
+        - "profitability_analysis"
+        - "inventory_optimization"
+        - "trend_analysis"
+    
+    manager:
+      permissions:
+        - "view_all_categories"
+        - "view_business_analytics"
+        - "view_performance_metrics"
+      ui_elements:
+        - "analytics_dashboard"
+        - "category_table"
+        - "category_filters"
+      insights:
+        - "business_performance"
+        - "category_trends"
+        - "stock_recommendations"
+    
+    viewer:
+      permissions:
+        - "view_basic_categories"
+      ui_elements:
+        - "category_table"
+      insights:
+        - "basic_category_info"
+
+  # UI Behavior Policies
+  ui_behavior:
+    themes:
+      admin:
+        color: "red"
+        style: "comprehensive"
+        layout: "dashboard-grid"
+        components: ["dashboard", "analytics", "table", "filters"]
+      manager:
+        color: "blue"
+        style: "business"
+        layout: "analytics-focused"
+        components: ["analytics", "table", "filters"]
+      viewer:
+        color: "green"
+        style: "minimal"
+        layout: "simple-table"
+        components: ["table"]
+    
+    interactions:
+      sorting:
+        default_column: "total_value"
+        default_order: "desc"
+      
+      filtering:
+        auto_refresh: true
+        persist_filters: true
+      
+      analytics:
+        auto_update_interval: 30000  # 30 seconds
+        chart_type: "bar"
+        show_percentages: true
+
+  # AI Response Templates
+  response_formats:
+    admin_response:
+      message: "Complete category analytics with full administrative insights"
+      include_metadata: true
+      include_ai_recommendations: true
+      
+    manager_response:
+      message: "Business-focused category analytics for strategic decisions"
+      include_metadata: true
+      include_business_insights: true
+      
+    viewer_response:
+      message: "Basic category overview for general reference"
+      include_metadata: false
+      include_basic_info: true
+
+  # Data Processing Rules
+  data_processing:
+    calculations:
+      total_inventory_value: "sum(product.price * product.stock) for each category"
+      average_price: "avg(product.price) for each category"
+      low_stock_threshold: 20
+      high_value_threshold: 10000
+    
+    sorting:
+      default_sort: "total_inventory_value"
+      available_sorts:
+        - "product_count"
+        - "total_inventory_value"
+        - "average_price"
+        - "low_stock_count"
+        - "category_name"
+    
+    filtering:
+      high_value_filter: "total_inventory_value > 10000"
+      low_stock_filter: "low_stock_count > 0"
+      popular_filter: "product_count > 3"
+
+# Extended AI Prompts for Category Features
+extended_ai_prompts:
+  category_analysis:
+    prompt: |
+      Analyze the category data and provide insights based on the user's role.
+      Focus on business value, inventory optimization, and strategic recommendations.
+      
+      For admin users: Include detailed analytics, profitability insights, and optimization suggestions.
+      For manager users: Focus on business performance, trends, and actionable recommendations.
+      For viewer users: Provide basic category information and overview.
+  
+  ui_generation:
+    prompt: |
+      Generate category management UI components based on the user's role and permissions.
+      
+      Include appropriate analytics dashboards, tables, and filters based on access level.
+      Ensure the UI follows the defined themes and layouts for each role.
+      
+      Always include AI-generated insights and recommendations where appropriate.
+
+# Feature Activation
+feature_flags:
+  category_analytics: true
+  category_management: true
+  advanced_filtering: true
+  export_functionality: true
+  real_time_updates: true
+  ai_recommendations: true

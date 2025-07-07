@@ -26,6 +26,45 @@ class AIRuntimeEngine:
         self.ai_provider = self._setup_ai_provider()
         print("🧠 AI Runtime Engine initialized - ZERO hardcoded business logic!")
     
+    def _deep_merge_policies(self, base_policies: Dict, new_policies: Dict) -> Dict:
+        """Deep merge two policy dictionaries, combining access_policies and other nested structures"""
+        result = base_policies.copy()
+        
+        for key, value in new_policies.items():
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                # Special handling for access_policies to merge user roles
+                if key == "access_policies":
+                    if "access_policies" not in result:
+                        result["access_policies"] = {}
+                    for role, role_policies in value.items():
+                        if role in result["access_policies"]:
+                            # Merge permissions and ui_elements
+                            existing = result["access_policies"][role]
+                            if "permissions" in role_policies:
+                                # Combine permissions and remove duplicates
+                                existing_perms = existing.get("permissions", [])
+                                new_perms = role_policies["permissions"]
+                                combined_perms = list(set(existing_perms + new_perms))
+                                role_policies["permissions"] = combined_perms
+                            if "ui_elements" in role_policies:
+                                # Combine ui_elements and remove duplicates
+                                existing_ui = existing.get("ui_elements", [])
+                                new_ui = role_policies["ui_elements"]
+                                combined_ui = list(set(existing_ui + new_ui))
+                                role_policies["ui_elements"] = combined_ui
+                            # Update the role with merged data
+                            result["access_policies"][role].update(role_policies)
+                        else:
+                            result["access_policies"][role] = value[role]
+                else:
+                    # For other nested dictionaries, do recursive merge
+                    result[key] = self._deep_merge_policies(result[key], value)
+            else:
+                # For non-dict values or new keys, just add/replace
+                result[key] = value
+                
+        return result
+    
     def _load_policies(self) -> Dict:
         """Load ALL business rules from POLICIES directory"""
         policies = {}
@@ -46,7 +85,8 @@ class AIRuntimeEngine:
                     with open(file_path, 'r') as f:
                         file_policies = yaml.safe_load(f)
                         if file_policies:
-                            policies.update(file_policies)
+                            # Deep merge policies to avoid overwriting
+                            policies = self._deep_merge_policies(policies, file_policies)
                             print(f"✅ Loaded policies from {policy_file}")
                 else:
                     print(f"⚠️ Policy file {policy_file} not found, skipping")
@@ -104,6 +144,11 @@ class AIRuntimeEngine:
         
         print(f"🤖 AI Engine processing: {method} {path} for role '{user_role}'")
         
+        # Check if this is a UI request (frontend wants UI instructions)
+        is_ui_request = headers.get('X-UI-Request') == 'true'
+        if is_ui_request:
+            print("🎨 UI Request detected - will include UI generation instructions")
+        
         # AI determines what this request is asking for
         request_intent = self._analyze_request_intent(path, method, data)
         print(f"🎯 AI determined intent: {request_intent['action']}")
@@ -122,9 +167,9 @@ class AIRuntimeEngine:
         
         # AI processes the request and generates response
         if request_intent["action"] == "get_products":
-            return await self._handle_get_products(user_role)
+            return await self._handle_get_products(user_role, is_ui_request)
         elif request_intent["action"] == "add_product":
-            return await self._handle_add_product(user_role, data)
+            return await self._handle_add_product(user_role, data, is_ui_request)
         elif request_intent["action"] == "delete_product":
             # Handle both "product_id" and "entity" field names from AI response
             product_id = request_intent.get("product_id") or request_intent.get("entity")
@@ -143,15 +188,15 @@ class AIRuntimeEngine:
                     "path": path,
                     "timestamp": self._get_timestamp()
                 }
-            return await self._handle_delete_product(user_role, product_id)
+            return await self._handle_delete_product(user_role, product_id, is_ui_request)
         elif request_intent["action"] == "get_user_context":
-            return await self._handle_get_user_context(user_role)
+            return await self._handle_get_user_context(user_role, is_ui_request)
         elif request_intent["action"] == "get_health":
             return await self._handle_health_check()
         elif request_intent["action"] == "get_demo_info":
             return await self._handle_demo_info()
         elif request_intent["action"] == "get_categories":
-            return await self._handle_get_categories(user_role)
+            return await self._handle_get_categories(user_role, is_ui_request)
         else:
             return await self._handle_unknown_request(path, method, user_role, data)
     
@@ -166,7 +211,7 @@ class AIRuntimeEngine:
         Method: {method}
         Data: {data}
         
-        Available actions: get_products, add_product, delete_product, get_user_context, get_health, get_demo_info, unknown
+        Available actions: get_products, add_product, delete_product, get_user_context, get_health, get_demo_info, get_categories, unknown
         
         Return ONLY a JSON object with the action and any required parameters. Do NOT include any other text or explanation.
         
@@ -175,6 +220,7 @@ class AIRuntimeEngine:
         - For POST /api/products: {{"action": "add_product"}}
         - For DELETE /api/products/p4: {{"action": "delete_product", "product_id": "p4"}}
         - For GET /api/user-context/admin: {{"action": "get_user_context", "role": "admin"}}
+        - For GET /api/categories: {{"action": "get_categories"}}
         
         IMPORTANT: For delete operations, use "product_id" field name, not "entity".
         """
@@ -209,7 +255,8 @@ class AIRuntimeEngine:
             "delete_product": "delete",
             "get_user_context": "view",
             "get_health": "view",
-            "get_demo_info": "view"
+            "get_demo_info": "view",
+            "get_categories": "view"
         }
         
         required_permission = action_permission_map.get(request_intent["action"])
@@ -225,7 +272,7 @@ class AIRuntimeEngine:
                 "message": f"Role '{user_role}' cannot perform '{request_intent['action']}'. Required permission: '{required_permission}'"
             }
     
-    async def _handle_get_products(self, user_role: str) -> Dict:
+    async def _handle_get_products(self, user_role: str, is_ui_request: bool = False) -> Dict:
         """AI generates product list response based on user role"""
         
         products = self.storage.get_products()
@@ -277,9 +324,150 @@ class AIRuntimeEngine:
                 "action_needed": len(stats["low_stock_items"]) > 0
             }
         
+        # Add UI generation instructions if this is a UI request
+        if is_ui_request:
+            response["ui_instructions"] = self._generate_ui_instructions(user_role, "products", response)
+        
         return response
     
-    async def _handle_add_product(self, user_role: str, product_data: Dict) -> Dict:
+    def _generate_ui_instructions(self, user_role: str, view_type: str, data: Dict) -> Dict:
+        """Generate AI-driven UI instructions for dynamic frontend rendering"""
+        
+        access_policies = self.policies.get("access_policies", {})
+        user_policies = access_policies.get(user_role, {})
+        permissions = user_policies.get("permissions", [])
+        
+        # Base UI configuration
+        ui_config = {
+            "layout": self._get_layout_for_role(user_role),
+            "theme": data.get("theme", {"color": "blue", "style": "minimal", "components": []}),
+            "components": [],
+            "navigation": [],
+            "permissions": permissions,
+            "user_role": user_role
+        }
+        
+        # Generate navigation based on permissions
+        navigation = [
+            {
+                "label": "📦 Products",
+                "endpoint": "/api/products", 
+                "visible_to": ["viewer", "manager", "admin"],
+                "active": view_type == "products"
+            }
+        ]
+        
+        # Add categories navigation only if categories feature is available in policies
+        categories_feature = self.policies.get("categories_feature", {})
+        if categories_feature and "view" in permissions and (user_role == "admin" or user_role == "manager"):
+            navigation.append({
+                "label": "📊 Categories",
+                "endpoint": "/api/categories",
+                "visible_to": ["manager", "admin"],
+                "active": view_type == "categories"
+            })
+        
+        ui_config["navigation"] = navigation
+        
+        # Generate components based on view type and user permissions
+        if view_type == "products":
+            # Main product table component
+            ui_config["components"].append({
+                "id": "products-table",
+                "type": "table",
+                "props": {
+                    "title": "Product Inventory",
+                    "data": data.get("products", []),
+                    "columns": ["name", "category", "price", "stock"],
+                    "actions": self._get_table_actions(permissions)
+                },
+                "data": data.get("products", []),
+                "permissions": ["view"],
+                "visible_to": ["viewer", "manager", "admin"],
+                "position": {"section": "main", "order": 1}
+            })
+            
+            # Add form if user can add products
+            if "add" in permissions:
+                ui_config["components"].append({
+                    "id": "add-product-form",
+                    "type": "form",
+                    "props": {
+                        "title": "Add New Product",
+                        "fields": [
+                            {"name": "name", "type": "text", "required": True, "label": "Product Name"},
+                            {"name": "category", "type": "select", "required": True, "label": "Category", 
+                             "options": ["Electronics", "Furniture", "Stationery", "Clothing", "Books"]},
+                            {"name": "price", "type": "number", "required": True, "label": "Price", "min": 0.01},
+                            {"name": "stock", "type": "number", "required": True, "label": "Stock", "min": 0}
+                        ],
+                        "submitEndpoint": "/api/products",
+                        "submitMethod": "POST"
+                    },
+                    "permissions": ["add"],
+                    "visible_to": ["manager", "admin"],
+                    "position": {"section": "main", "order": 2}
+                })
+        
+        elif view_type == "categories":
+            # Categories analytics component
+            if "view" in permissions:
+                ui_config["components"].append({
+                    "id": "categories-analytics",
+                    "type": "analytics", 
+                    "props": {
+                        "title": "Category Analytics",
+                        "data": data.get("categories", []),
+                        "metrics": ["product_count", "total_inventory_value", "low_stock_alerts"],
+                        "chartType": "bar"
+                    },
+                    "data": data.get("categories", []),
+                    "permissions": ["view"],
+                    "visible_to": ["manager", "admin"],
+                    "position": {"section": "main", "order": 1}
+                })
+        
+        # Add admin dashboard components
+        if user_role == "admin" and data.get("admin_insights"):
+            ui_config["components"].insert(0, {
+                "id": "admin-dashboard",
+                "type": "dashboard",
+                "props": {
+                    "title": "Admin Dashboard",
+                    "insights": data["admin_insights"],
+                    "widgets": ["total_products", "total_value", "low_stock_alerts"]
+                },
+                "data": data["admin_insights"],
+                "permissions": ["admin"],
+                "visible_to": ["admin"],
+                "position": {"section": "main", "order": 0}
+            })
+        
+        return ui_config
+    
+    def _get_layout_for_role(self, user_role: str) -> str:
+        """Get layout configuration for user role"""
+        layout_map = {
+            "admin": "admin-layout",
+            "manager": "business-layout", 
+            "viewer": "minimal-layout"
+        }
+        return layout_map.get(user_role, "default-layout")
+    
+    def _get_table_actions(self, permissions: List[str]) -> List[str]:
+        """Get available table actions based on permissions"""
+        actions = []
+        if "view" in permissions:
+            actions.append("view")
+        if "add" in permissions:
+            actions.append("add")
+        if "delete" in permissions:
+            actions.append("delete")
+        if "update" in permissions:
+            actions.append("edit")
+        return actions
+    
+    async def _handle_add_product(self, user_role: str, product_data: Dict, is_ui_request: bool = False) -> Dict:
         """AI processes product addition"""
         
         # AI validates the data
@@ -292,6 +480,19 @@ class AIRuntimeEngine:
                 "user_role": user_role,
                 "timestamp": self._get_timestamp()
             }
+        
+        # Ensure numeric fields are properly typed (convert from strings if needed)
+        if "price" in product_data:
+            try:
+                product_data["price"] = float(product_data["price"])
+            except (ValueError, TypeError):
+                product_data["price"] = 0.0
+                
+        if "stock" in product_data:
+            try:
+                product_data["stock"] = int(product_data["stock"])
+            except (ValueError, TypeError):
+                product_data["stock"] = 0
         
         # AI adds the product
         success = self.storage.add_product(product_data)
@@ -313,7 +514,7 @@ class AIRuntimeEngine:
                 "timestamp": self._get_timestamp()
             }
     
-    async def _handle_delete_product(self, user_role: str, product_id: str) -> Dict:
+    async def _handle_delete_product(self, user_role: str, product_id: str, is_ui_request: bool = False) -> Dict:
         """AI processes product deletion"""
         
         # AI checks if product exists
@@ -348,7 +549,7 @@ class AIRuntimeEngine:
                 "timestamp": self._get_timestamp()
             }
     
-    async def _handle_get_user_context(self, user_role: str) -> Dict:
+    async def _handle_get_user_context(self, user_role: str, is_ui_request: bool = False) -> Dict:
         """AI returns user context and capabilities"""
         
         access_policies = self.policies.get("access_policies", {})
@@ -359,7 +560,7 @@ class AIRuntimeEngine:
         
         user_data = self.storage.get_user_by_role(user_role)
         
-        return {
+        response = {
             "user_role": user_role,
             "user_data": user_data,
             "permissions": user_policies.get("permissions", []),
@@ -370,6 +571,12 @@ class AIRuntimeEngine:
             "ai_suggestions": self._get_user_suggestions(user_role),
             "timestamp": self._get_timestamp()
         }
+        
+        # Add UI generation instructions if this is a UI request
+        if is_ui_request:
+            response["ui_instructions"] = self._generate_ui_instructions(user_role, "context", response)
+        
+        return response
     
     async def _handle_health_check(self) -> Dict:
         """AI-generated health check"""
@@ -431,7 +638,7 @@ class AIRuntimeEngine:
             "timestamp": self._get_timestamp()
         }
     
-    async def _handle_get_categories(self, user_role: str) -> Dict:
+    async def _handle_get_categories(self, user_role: str, is_ui_request: bool = False) -> Dict:
         """AI generates product categories response based on policies"""
         
         # Check permissions from loaded policies
@@ -478,8 +685,9 @@ class AIRuntimeEngine:
                     "products": []
                 }
             
-            price = product.get("price", 0)
-            stock = product.get("stock", 0)
+            # Ensure price and stock are numbers (convert from string if needed)
+            price = float(product.get("price", 0))
+            stock = int(product.get("stock", 0))
             value = price * stock
             
             categories[category]["product_count"] += 1
@@ -500,7 +708,8 @@ class AIRuntimeEngine:
         for category_data in categories.values():
             # Calculate metrics
             if category_data["product_count"] > 0:
-                total_price = sum(p.get("price", 0) for p in category_data["products"])
+                # Ensure prices are numbers when calculating average
+                total_price = sum(float(p.get("price", 0)) for p in category_data["products"])
                 average_price = total_price / category_data["product_count"]
             else:
                 average_price = 0
@@ -547,6 +756,10 @@ class AIRuntimeEngine:
             "timestamp": self._get_timestamp(),
             "generated_by": "AI Runtime Engine - Policy-Driven Categories"
         }
+        
+        # Add UI generation instructions if this is a UI request
+        if is_ui_request:
+            response["ui_instructions"] = self._generate_ui_instructions(user_role, "categories", response)
         
         return response
     

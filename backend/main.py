@@ -24,7 +24,7 @@ app.add_middleware(
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["Content-Type", "X-User-Role", "Authorization"],
+    allow_headers=["Content-Type", "X-User-Role", "X-UI-Request", "Authorization"],
 )
 
 # Single AI Runtime Engine instance - this IS the entire application
@@ -48,7 +48,17 @@ async def handle_everything(request: Request, full_path: str):
     The AI Engine IS the application. No other business logic exists.
     """
     
-    # CORS preflight requests are handled by middleware
+    # Handle CORS preflight requests
+    if request.method == "OPTIONS":
+        return JSONResponse(
+            content={},
+            status_code=200,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, X-User-Role, X-UI-Request, Authorization",
+            }
+        )
     
     try:
         # Extract user context from headers

@@ -1,0 +1,57 @@
+# Extended Access Control - Adds Category Permissions
+# This extends the base access policies with category management permissions
+
+# Extended permissions for categories feature
+access_policies:
+  viewer:
+    permissions: [view]
+    ui_elements: [product_table, user_info]
+    message: "Viewer can only see products - read-only access"
+    description: "Basic user with viewing capabilities only"
+    restrictions:
+      - Cannot modify any data
+      - Cannot access admin features
+      - Limited to product viewing
+      - Cannot access category analytics
+    
+  manager:
+    permissions: [view, add, view_categories]
+    ui_elements: [product_table, add_button, user_info, category_navigation]
+    message: "Manager can view and add products, plus access category analytics"
+    description: "Business user who can manage inventory and view category insights"
+    restrictions:
+      - Cannot delete products
+      - Cannot access admin analytics
+      - Can add products within business rules
+      - Can view business category analytics
+    
+  admin:
+    permissions: [view, add, delete, update, view_categories, manage_categories]
+    ui_elements: [product_table, add_button, delete_buttons, user_info, admin_panel, category_navigation, category_dashboard]
+    message: "Admin has full access to all operations including advanced category management"
+    description: "Full access user with all capabilities including category management"
+    restrictions: []
+    special_features:
+      - Access to analytics and insights
+      - Can perform all CRUD operations
+      - Can view system health and statistics
+      - Full category analytics and management
+      - Advanced category trend analysis
+
+# Extended role hierarchy
+role_hierarchy:
+  admin: [manager, viewer]
+  manager: [viewer] 
+  viewer: []
+
+# Category-specific permissions
+category_permissions:
+  view_categories:
+    description: "View category analytics and breakdowns"
+    allowed_roles: [manager, admin]
+    denied_roles: [viewer]
+    
+  manage_categories:
+    description: "Advanced category management and configuration"
+    allowed_roles: [admin]
+    denied_roles: [manager, viewer]
