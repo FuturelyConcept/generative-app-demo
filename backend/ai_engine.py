@@ -560,10 +560,17 @@ class HuggingFaceProvider:
             if response.status_code == 200:
                 result = response.json()
                 if isinstance(result, list) and len(result) > 0:
-                    generated_text = result[0].get('generated_text', '')
-                    if not generated_text:
-                        raise RuntimeError("HuggingFace API returned empty response")
-                    return generated_text.strip()
+                    # Handle different response formats
+                    first_result = result[0]
+                    if isinstance(first_result, dict):
+                        # BART/text generation models
+                        generated_text = first_result.get('generated_text') or first_result.get('summary_text', '')
+                        if not generated_text:
+                            raise RuntimeError("HuggingFace API returned empty response")
+                        return generated_text.strip()
+                    else:
+                        # Vector embeddings or other formats - not suitable for text generation
+                        raise RuntimeError("HuggingFace model returned vector embeddings, not text. Need a text generation model.")
                 else:
                     raise RuntimeError("HuggingFace API returned invalid response format")
             else:
