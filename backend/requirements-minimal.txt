@@ -17,5 +17,8 @@ python-dotenv==1.0.0
 # Development and testing
 python-multipart==0.0.6
 
+# OpenAI library
+openai
+
 # Note: This minimal version uses HuggingFace API calls only
 # No heavy AI model dependencies needed!

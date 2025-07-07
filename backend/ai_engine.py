@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 from storage import JSONStorage
 from dotenv import load_dotenv
+import openai
 
 # Load environment variables
 load_dotenv()
@@ -114,7 +115,7 @@ class AIRuntimeEngine:
         
         # Create AI prompt for request analysis
         prompt = f"""
-        Analyze this HTTP request and determine the user's intent:
+        Analyze this HTTP request and determine the user's intent.
         
         Path: {path}
         Method: {method}
@@ -122,8 +123,8 @@ class AIRuntimeEngine:
         
         Available actions: get_products, add_product, delete_product, get_user_context, get_health, get_demo_info, unknown
         
-        Return ONLY a JSON object with the action and any required parameters.
-        Example: {{"action": "get_products", "entity": "product"}}
+        Return ONLY a JSON object with the action and any required parameters. Do NOT include any other text or explanation.
+        Example: ```json{{"action": "get_products", "entity": "product"}}```
         """
         
         # AI must determine the intent - no fallback logic allowed
@@ -131,8 +132,9 @@ class AIRuntimeEngine:
         
         try:
             import json
+            print(f"DEBUG: Raw AI response: {ai_response}") # Added for debugging
             # Parse AI response as JSON
-            intent = json.loads(ai_response.strip())
+            intent = json.loads(ai_response)
             if "action" not in intent:
                 raise ValueError("AI response missing 'action' field")
             return intent
@@ -550,8 +552,7 @@ class HuggingFaceProvider:
                 "parameters": {
                     "max_length": 150,
                     "temperature": 0.7,
-                    "do_sample": True,
-                    "return_full_text": False
+                    "do_sample": True
                 }
             }
             
@@ -608,6 +609,32 @@ class HuggingFaceProvider:
         }
         
         return base_response
+
+class OpenAIProvider:
+    """Real AI using OpenAI"""
+    
+    def __init__(self, api_key: str):
+        import openai
+        openai.api_key = api_key
+        self.model_name = os.getenv('OPENAI_MODEL', 'gpt-4o-mini') # Use a chat model
+        print(f"🤖 OpenAI AI Provider initialized with model: {self.model_name}")
+
+    def generate_response(self, prompt: str) -> str:
+        try:
+            import openai
+            response = openai.ChatCompletion.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that returns JSON objects only."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=150,
+                temperature=0.7,
+                response_format={ "type": "json_object" }
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            raise RuntimeError(f"CRITICAL AI FAILURE: Pure AI Runtime Engine cannot work without AI. Error: {e}")
 
 class OllamaProvider:
     """Local AI using Ollama"""

@@ -14,10 +14,7 @@ if ! node --version >/dev/null 2>&1; then
 fi
 
 # Copy environment file if needed
-if [ ! -f .env ]; then
-    cp .env.example .env
-    echo "📝 Created .env file with HuggingFace AI enabled"
-fi
+# Removed automatic .env creation to allow .env.local to be used
 
 echo "🧠 Starting AI Runtime Engine Backend..."
 
