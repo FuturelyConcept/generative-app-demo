@@ -1,0 +1,38 @@
+# Business Rules - AI enforces these automatically
+# Core business logic and validation rules for the AI Runtime Engine
+
+business_rules:
+  product_management:
+    stock_thresholds:
+      low_stock: 20
+      critical_stock: 5
+      max_stock: 1000
+    
+    price_rules:
+      min_price: 0.01
+      max_price: 10000.00
+      currency: "USD"
+      decimal_places: 2
+    
+    category_rules:
+      allowed_categories: [Electronics, Furniture, Stationery]
+      default_category: "Electronics"
+      case_sensitive: false
+    
+    validation_rules:
+      required_fields: [name, category, price, stock]
+      name_min_length: 1
+      name_max_length: 100
+      special_characters_allowed: false
+    
+    inventory_rules:
+      auto_generate_id: true
+      id_prefix: "p"
+      track_changes: true
+      audit_trail: false
+
+  user_management:
+    session_rules:
+      timeout: 3600
+      max_operations_per_minute: 100
+      concurrent_sessions: 1

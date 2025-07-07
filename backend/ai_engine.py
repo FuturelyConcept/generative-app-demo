@@ -27,12 +27,41 @@ class AIRuntimeEngine:
         print("🧠 AI Runtime Engine initialized - ZERO hardcoded business logic!")
     
     def _load_policies(self) -> Dict:
-        """Load ALL business rules from single YAML file"""
+        """Load ALL business rules from POLICIES directory"""
+        policies = {}
+        policies_dir = "../POLICIES"
+        
+        # List of policy files to load
+        policy_files = [
+            "access_control.yaml",
+            "business_rules.yaml", 
+            "ui_behavior.yaml",
+            "entities.yaml",
+            "ai_responses.yaml",
+            "system_config.yaml"
+        ]
+        
         try:
-            with open('policies.yaml', 'r') as f:
-                return yaml.safe_load(f)
-        except FileNotFoundError:
-            print("⚠️ policies.yaml not found, using minimal default policies")
+            for policy_file in policy_files:
+                file_path = os.path.join(policies_dir, policy_file)
+                if os.path.exists(file_path):
+                    with open(file_path, 'r') as f:
+                        file_policies = yaml.safe_load(f)
+                        if file_policies:
+                            policies.update(file_policies)
+                            print(f"✅ Loaded policies from {policy_file}")
+                else:
+                    print(f"⚠️ Policy file {policy_file} not found, skipping")
+            
+            if not policies:
+                raise FileNotFoundError("No policy files found")
+                
+            print(f"🎯 Successfully loaded {len(policy_files)} policy files from POLICIES directory")
+            return policies
+            
+        except Exception as e:
+            print(f"⚠️ Error loading policies: {e}")
+            print("🔄 Using minimal default policies")
             return {
                 "access_policies": {
                     "admin": {"permissions": ["view", "add", "delete"], "ui_elements": ["product_table", "add_button", "delete_buttons"]},
@@ -99,7 +128,24 @@ class AIRuntimeEngine:
         elif request_intent["action"] == "add_product":
             return await self._handle_add_product(user_role, data)
         elif request_intent["action"] == "delete_product":
-            return await self._handle_delete_product(user_role, request_intent["product_id"])
+            # Handle both "product_id" and "entity" field names from AI response
+            product_id = request_intent.get("product_id") or request_intent.get("entity")
+            
+            # Fallback: extract product ID from path if AI didn't provide it
+            if not product_id and "/" in path:
+                path_parts = path.split("/")
+                if len(path_parts) >= 3 and path_parts[-2] == "products":
+                    product_id = path_parts[-1]
+            
+            if not product_id:
+                return {
+                    "error": "Invalid Request",
+                    "message": "Product ID not found in AI analysis or path",
+                    "ai_response": request_intent,
+                    "path": path,
+                    "timestamp": self._get_timestamp()
+                }
+            return await self._handle_delete_product(user_role, product_id)
         elif request_intent["action"] == "get_user_context":
             return await self._handle_get_user_context(user_role)
         elif request_intent["action"] == "get_health":
@@ -123,7 +169,14 @@ class AIRuntimeEngine:
         Available actions: get_products, add_product, delete_product, get_user_context, get_health, get_demo_info, unknown
         
         Return ONLY a JSON object with the action and any required parameters. Do NOT include any other text or explanation.
-        Example: ```json{{"action": "get_products", "entity": "product"}}```
+        
+        Examples:
+        - For GET /api/products: {{"action": "get_products"}}
+        - For POST /api/products: {{"action": "add_product"}}
+        - For DELETE /api/products/p4: {{"action": "delete_product", "product_id": "p4"}}
+        - For GET /api/user-context/admin: {{"action": "get_user_context", "role": "admin"}}
+        
+        IMPORTANT: For delete operations, use "product_id" field name, not "entity".
         """
         
         # AI must determine the intent - no fallback logic allowed

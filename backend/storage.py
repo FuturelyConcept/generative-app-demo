@@ -8,7 +8,7 @@ from typing import List, Dict, Optional
 class JSONStorage:
     """Simple JSON file storage - no database needed"""
     
-    def __init__(self, data_dir: str = "data"):
+    def __init__(self, data_dir: str = "../DATA"):
         self.data_dir = data_dir
         self.users_file = os.path.join(data_dir, "users.json")
         self.products_file = os.path.join(data_dir, "products.json")

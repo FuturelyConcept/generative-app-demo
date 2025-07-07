@@ -1,0 +1,38 @@
+# UI Behavior Policies - AI determines interface from this
+# Frontend behavior and theming rules for the AI Runtime Engine
+
+ui_behavior:
+  product_table:
+    base_columns: [name, category, price, stock]
+    viewer_columns: [name, category, price, stock]
+    manager_columns: [name, category, price, stock, add_actions]
+    admin_columns: [name, category, price, stock, all_actions]
+    
+  themes:
+    viewer: 
+      color: "blue"
+      layout: "minimal"
+      style: "read-only"
+      components: ["table", "filters"]
+    manager: 
+      color: "green"
+      layout: "business"
+      style: "productive"
+      components: ["table", "add-form", "filters"]
+    admin: 
+      color: "red"
+      layout: "full"
+      style: "powerful"
+      components: ["table", "add-form", "delete-controls", "analytics", "filters"]
+
+  form_behavior:
+    add_product:
+      fields: [name, category, price, stock]
+      validation: "real-time"
+      submit_behavior: "immediate"
+      success_action: "refresh_table"
+    
+    delete_product:
+      confirmation: true
+      confirmation_message: "Are you sure you want to delete this product?"
+      success_action: "remove_from_table"

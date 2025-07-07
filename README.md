@@ -1,8 +1,8 @@
 # 🚀 AI Runtime Engine Demo - Pure Zero-Code Application
 
-> **Revolutionary Concept**: Where AI **IS** the application runtime, not just a feature
+> **Revolutionary Concept**: **AI + DATA + POLICIES = Complete Application**
 
-This project demonstrates the future of software development: a **pure zero-code application** where AI handles ALL business logic dynamically. No hardcoded endpoints, no controller classes, no service layers - just AI making real-time decisions.
+This project demonstrates the future of software development: a **pure zero-code application** where AI handles ALL business logic dynamically. No hardcoded endpoints, no controller classes, no service layers - just **AI + DATA + POLICIES** making real-time decisions.
 
 ## 🧠 What Makes This Revolutionary?
 
@@ -13,17 +13,16 @@ Requirements → Write Code → Build → Deploy → Run
 
 ### AI Runtime Engine
 ```
-Data + Policies → AI Engine → Live Application (ZERO Code)
+AI + DATA + POLICIES → Live Application (ZERO Code)
 ```
 
 ## ✨ What Exists vs What Doesn't
 
 ### ✅ What EXISTS
-- **3 users** in JSON file (`backend/data/users.json`)
-- **15 products** in JSON file (`backend/data/products.json`)
-- **1 policy file** with ALL business rules (`backend/policies.yaml`)
-- **1 AI engine** that IS the entire application (`backend/ai_engine.py`)
-- **React frontend** that adapts to AI responses dynamically
+- **📊 DATA Directory**: 3 users + 15 products in JSON files (`DATA/`)
+- **🎯 POLICIES Directory**: 6 focused policy files with ALL business rules (`POLICIES/`)
+- **🤖 AI Engine**: Single engine that IS the entire application (`backend/ai_engine.py`)
+- **⚛️ React Frontend**: Dynamically adapts to AI responses (`frontend/`)
 
 ### ❌ What DOESN'T EXIST
 - ❌ No controller classes
@@ -32,6 +31,26 @@ Data + Policies → AI Engine → Live Application (ZERO Code)
 - ❌ No hardcoded business logic
 - ❌ No hardcoded API endpoints
 - ❌ No traditional application code
+
+## 🎯 The AI + DATA + POLICIES Revolution
+
+### 🤖 AI (Intelligence Layer)
+- **OpenAI-powered decision making** - Real AI understanding requests
+- **Dynamic request analysis** - No hardcoded endpoint logic
+- **Policy interpretation** - AI understands and applies business rules
+- **Contextual responses** - Different behavior per user role
+
+### 📊 DATA (State Layer)  
+- **Simple JSON storage** - No database complexity
+- **Users & products** - All application state in text files
+- **Version control friendly** - Easy to track and modify
+- **AI operates on this data** - Reads, writes, analyzes according to policies
+
+### 🎯 POLICIES (Logic Layer)
+- **6 focused policy files** - Each handling specific concerns
+- **Zero hardcoded logic** - All business rules in YAML
+- **Independent management** - Modify access, UI, business rules separately
+- **Instant updates** - Change policies, change application behavior
 
 ## 🎯 Core Features
 
@@ -121,34 +140,48 @@ curl -X DELETE -H "X-User-Role: admin" \
 
 ## 🏗️ Architecture Deep Dive
 
-### Backend Structure
+### Project Structure (AI + DATA + POLICIES)
 ```
-backend/
-├── main.py              # Single catch-all endpoint
-├── ai_engine.py         # THE ENTIRE APPLICATION LOGIC
-├── storage.py           # Simple JSON operations
-├── policies.yaml        # ALL BUSINESS RULES
-└── data/
-    ├── users.json       # User definitions
-    └── products.json    # Product data
+ai-runtime-demo/
+├── 📊 DATA/                    # Application Data
+│   ├── users.json             # User definitions & roles
+│   ├── products.json          # Product inventory
+│   └── README.md              # Data documentation
+├── 🎯 POLICIES/               # All Business Logic
+│   ├── access_control.yaml    # Role-based permissions
+│   ├── business_rules.yaml    # Core business logic
+│   ├── ui_behavior.yaml       # Frontend behavior
+│   ├── entities.yaml          # Data structure definitions
+│   ├── ai_responses.yaml      # AI response templates
+│   ├── system_config.yaml     # Technical configuration
+│   └── README.md              # Policy documentation
+├── 🤖 backend/                # AI Engine
+│   ├── main.py                # Single catch-all endpoint
+│   ├── ai_engine.py           # THE ENTIRE APPLICATION LOGIC
+│   └── storage.py             # Simple JSON operations
+└── ⚛️ frontend/               # Dynamic UI
+    └── [React components]     # AI-adaptive interface
 ```
 
-### Frontend Structure
-```
-frontend/
-├── app/
-│   ├── page.tsx         # Main application UI
-│   ├── layout.tsx       # Root layout
-│   ├── error.tsx        # Error boundary
-│   ├── loading.tsx      # Loading states
-│   └── not-found.tsx    # 404 handler
-├── components/
-│   ├── ProductTable.tsx # Dynamic product management
-│   ├── UserSwitcher.tsx # Role switching interface
-│   └── APITester.tsx    # Live API testing tool
-└── lib/
-    └── ai-client.ts     # AI Runtime API client
-```
+### The Three Pillars
+
+#### 📊 DATA (Application State)
+- **Simple JSON files** containing all application data
+- **No database required** - just structured data
+- **Version control friendly** - text-based storage
+- **AI operates on this data** according to policies
+
+#### 🎯 POLICIES (Business Logic)
+- **6 focused policy files** instead of one monolithic file
+- **Independent management** of different concerns
+- **Easy to understand** and modify
+- **AI uses these to make ALL decisions**
+
+#### 🤖 AI ENGINE (Runtime Processor)
+- **Single endpoint** handles ALL requests
+- **Loads policies at startup** from POLICIES directory
+- **Reads/writes data** from DATA directory
+- **Makes dynamic decisions** based on policies and data
 
 ## 🔧 Key Technologies
 
@@ -186,20 +219,34 @@ AI_PROVIDER=ollama
 OLLAMA_URL=http://localhost:11434
 ```
 
-### Business Rules (policies.yaml)
-Modify `backend/policies.yaml` to change application behavior instantly:
+### Business Rules (POLICIES Directory)
+Modify any policy file in `POLICIES/` to change application behavior instantly:
 
+#### Access Control (`POLICIES/access_control.yaml`)
 ```yaml
 access_policies:
   admin:
     permissions: [view, add, delete, update]
     ui_elements: [product_table, add_button, delete_buttons, admin_panel]
-  manager:
-    permissions: [view, add]
-    ui_elements: [product_table, add_button]
-  viewer:
-    permissions: [view]
-    ui_elements: [product_table]
+```
+
+#### Business Logic (`POLICIES/business_rules.yaml`)
+```yaml
+business_rules:
+  product_management:
+    stock_thresholds:
+      low_stock: 20
+      critical_stock: 5
+```
+
+#### UI Behavior (`POLICIES/ui_behavior.yaml`)
+```yaml
+ui_behavior:
+  themes:
+    admin: 
+      color: "red"
+      layout: "full"
+      style: "powerful"
 ```
 
 ## 🧠 How AI Decision Making Works
@@ -243,7 +290,7 @@ Use the left sidebar to switch between `admin`, `manager`, and `viewer` roles. W
 Use the "API Tester" tab to experiment with any endpoint. The AI handles unknown requests intelligently.
 
 ### 4. Live Policy Changes
-Edit `backend/policies.yaml` and see application behavior change without restarting.
+Edit any file in `POLICIES/` directory and see application behavior change without restarting.
 
 ## 🔒 Security & Best Practices
 
@@ -280,11 +327,12 @@ npm run dev
 ```
 
 ### Project Structure Principles
-1. **ZERO hardcoded business logic** - All behavior in policies.yaml
-2. **AI-first decision making** - AI handles ALL request analysis
-3. **Policy-driven everything** - Change policies → instant behavior change
-4. **Minimal dependencies** - Only essential libraries
-5. **Revolutionary simplicity** - Complex behavior, simple code
+1. **AI + DATA + POLICIES** - The three pillars of zero-code development
+2. **ZERO hardcoded business logic** - All behavior in POLICIES directory
+3. **AI-first decision making** - AI handles ALL request analysis
+4. **Policy-driven everything** - Change policies → instant behavior change
+5. **Data-driven state** - Simple JSON files contain all application data
+6. **Revolutionary simplicity** - Complex behavior, simple structure
 
 ## 🎯 Demo Scenarios
 
@@ -300,7 +348,7 @@ npm run dev
 4. Try different HTTP methods - see AI adapt
 
 ### Scenario 3: Live Policy Changes
-1. Edit `backend/policies.yaml`
+1. Edit any file in `POLICIES/` directory (e.g., `access_control.yaml`)
 2. Add new permission or UI element
 3. Refresh frontend - see instant changes
 4. No restart required!

@@ -1,0 +1,16 @@
+# Entity Definitions - AI understands data structures from this
+# Defines the data entities and their operations for the AI Runtime Engine
+
+entities:
+  product:
+    fields: [id, name, category, price, stock]
+    operations: [view, add, delete, update]
+    validation_rules:
+      name: {required: true, type: string, min_length: 1, max_length: 100}
+      category: {required: true, type: string, allowed_values: [Electronics, Furniture, Stationery]}
+      price: {required: true, type: number, min: 0.01, max: 10000}
+      stock: {required: true, type: integer, min: 0, max: 1000}
+  
+  user:
+    fields: [id, name, email, role]
+    operations: [view, context]

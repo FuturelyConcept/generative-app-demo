@@ -1,0 +1,44 @@
+# System Configuration - AI runtime behavior
+# Technical configuration for the AI Runtime Engine
+
+system_config:
+  ai_provider: "openai"  # Options: mock, openai, huggingface, ollama
+  response_format: "json"
+  logging_level: "info"
+  cache_policies: false
+  real_time_decisions: true
+  fallback_mode: "policy_based"
+  
+  performance:
+    request_timeout: 30
+    max_concurrent_requests: 100
+    cache_ttl: 300
+    
+  security:
+    validate_headers: true
+    sanitize_input: true
+    audit_requests: false
+    rate_limiting: false
+
+# Demo Configuration
+demo_settings:
+  auto_populate_data: true
+  show_ai_insights: true
+  expose_decision_process: true
+  interactive_policy_editing: false
+  
+  test_scenarios:
+    - name: "Role-based Access"
+      description: "Same endpoint returns different data per user role"
+      test_roles: [viewer, manager, admin]
+      expected_differences: [ui_elements, permissions, data_access]
+    
+    - name: "Dynamic Validation"
+      description: "AI validates data against business rules"
+      test_data: [valid_product, invalid_product, edge_cases]
+      expected_behavior: [accept, reject, sanitize]
+    
+    - name: "Policy-driven Responses"
+      description: "Changing policies instantly changes behavior"
+      modification: "policies.yaml"
+      expected_impact: "immediate_behavior_change"

@@ -1,0 +1,40 @@
+# Access Control Policies - AI determines permissions from this
+# Core role-based access control for the AI Runtime Engine
+
+access_policies:
+  viewer:
+    permissions: [view]
+    ui_elements: [product_table, user_info]
+    message: "Viewer can only see products - read-only access"
+    description: "Basic user with viewing capabilities only"
+    restrictions:
+      - Cannot modify any data
+      - Cannot access admin features
+      - Limited to product viewing
+    
+  manager:
+    permissions: [view, add]
+    ui_elements: [product_table, add_button, user_info]
+    message: "Manager can view and add products"
+    description: "Business user who can manage inventory additions"
+    restrictions:
+      - Cannot delete products
+      - Cannot access admin analytics
+      - Can add products within business rules
+    
+  admin:
+    permissions: [view, add, delete, update]
+    ui_elements: [product_table, add_button, delete_buttons, user_info, admin_panel]
+    message: "Admin has full access to all operations"
+    description: "Full access user with all capabilities"
+    restrictions: []
+    special_features:
+      - Access to analytics and insights
+      - Can perform all CRUD operations
+      - Can view system health and statistics
+
+# Role hierarchy for inheritance
+role_hierarchy:
+  admin: [manager, viewer]
+  manager: [viewer]
+  viewer: []

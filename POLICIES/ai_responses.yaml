@@ -1,0 +1,49 @@
+# AI Response Templates - AI uses these to generate consistent responses
+# Message templates and prompts for the AI Runtime Engine
+
+api_responses:
+  success_messages:
+    view: "Products retrieved successfully"
+    add: "Product added successfully to inventory"
+    delete: "Product removed from inventory"
+    update: "Product information updated"
+    
+  error_messages:
+    unauthorized: "Access denied - insufficient permissions for this operation"
+    not_found: "Requested product not found in inventory"
+    invalid_data: "Product data validation failed"
+    duplicate: "Product with this name already exists"
+    system_error: "AI Runtime Engine encountered an unexpected error"
+    
+  info_messages:
+    empty_inventory: "No products found in inventory"
+    filtered_results: "Showing filtered product results"
+    bulk_operation: "Multiple products processed"
+
+# AI Decision Prompts - These guide AI behavior
+ai_prompts:
+  permission_check: |
+    User with role '{role}' wants to perform action '{action}' on resource '{resource}'.
+    Based on the access policies defined above, determine if this action is allowed.
+    Consider the user's role, the requested action, and any restrictions.
+    Return a decision with explanation.
+  
+  ui_generation: |
+    For user role '{role}', determine which UI elements should be visible and active.
+    Consider the user's permissions, theme preferences, and business context.
+    Generate appropriate UI configuration.
+    
+  response_formatting: |
+    Generate appropriate API response for user role '{role}' accessing '{endpoint}'.
+    Include relevant data, permissions, user-specific messaging, and contextual information.
+    Follow the business rules and access policies defined above.
+    
+  error_handling: |
+    Handle error '{error}' for user role '{role}' performing '{action}'.
+    Provide helpful, role-appropriate error message and recovery suggestions.
+    Maintain security by not exposing internal system details.
+    
+  business_validation: |
+    Validate '{operation}' on '{entity}' with data '{data}'.
+    Apply all relevant business rules and validation constraints.
+    Return validation result with specific error details if invalid.
