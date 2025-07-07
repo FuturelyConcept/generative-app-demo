@@ -14,7 +14,10 @@ if ! node --version >/dev/null 2>&1; then
 fi
 
 # Copy environment file if needed
-# Removed automatic .env creation to allow .env.local to be used
+if [ -f ".env.local" ]; then
+    echo "🔧 Copying .env.local to backend/.env..."
+    cp .env.local backend/.env
+fi
 
 echo "🧠 Starting AI Runtime Engine Backend..."
 

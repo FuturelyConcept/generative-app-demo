@@ -21,10 +21,10 @@ app = FastAPI(
 # CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Content-Type", "X-User-Role", "Authorization"],
 )
 
 # Single AI Runtime Engine instance - this IS the entire application
@@ -48,16 +48,7 @@ async def handle_everything(request: Request, full_path: str):
     The AI Engine IS the application. No other business logic exists.
     """
     
-    # Handle CORS preflight
-    if request.method == "OPTIONS":
-        return JSONResponse(
-            content={"message": "CORS preflight handled by AI Runtime Engine"},
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "*",
-                "Access-Control-Allow-Headers": "*",
-            }
-        )
+    # CORS preflight requests are handled by middleware
     
     try:
         # Extract user context from headers

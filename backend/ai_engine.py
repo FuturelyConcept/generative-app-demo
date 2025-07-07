@@ -9,7 +9,6 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 from storage import JSONStorage
 from dotenv import load_dotenv
-import openai
 
 # Load environment variables
 load_dotenv()
@@ -614,18 +613,17 @@ class OpenAIProvider:
     """Real AI using OpenAI"""
     
     def __init__(self, api_key: str):
-        import openai
-        openai.api_key = api_key
+        from openai import OpenAI
+        self.client = OpenAI(api_key=api_key)
         self.model_name = os.getenv('OPENAI_MODEL', 'gpt-4o-mini') # Use a chat model
         print(f"🤖 OpenAI AI Provider initialized with model: {self.model_name}")
 
     def generate_response(self, prompt: str) -> str:
         try:
-            import openai
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant that returns JSON objects only."},
+                    {"role": "system", "content": "You are a helpful assistant that returns JSON objects only. Always return valid JSON."},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=150,

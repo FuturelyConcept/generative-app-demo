@@ -118,6 +118,13 @@
       "price": 33,
       "stock": 11,
       "id": "p17"
+    },
+    {
+      "name": "Owen",
+      "category": "Electronics",
+      "price": 4000,
+      "stock": 10,
+      "id": "p18"
     }
   ]
 }
