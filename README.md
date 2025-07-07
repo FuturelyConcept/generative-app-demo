@@ -99,7 +99,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 That's it! The entire zero-code application is now running.
 
 ### 4. Access the Demo
-- **Frontend UI**: http://localhost:3001
+- **Frontend UI**: http://localhost:3000
 - **Backend API**: http://localhost:8000  
 - **API Documentation**: http://localhost:8000/docs
 
