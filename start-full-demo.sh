@@ -67,6 +67,14 @@ echo "✅ Backend is running on http://localhost:8000"
 # Navigate to frontend and start React server
 cd ../frontend
 
+# Install frontend dependencies (only if node_modules doesn't exist or package.json is newer)
+if [ ! -d "node_modules" ] || [ package.json -nt node_modules ]; then
+    echo "📦 Installing frontend dependencies..."
+    npm install
+else
+    echo "✅ Frontend dependencies already installed"
+fi
+
 echo "⚛️ Starting Next.js Frontend..."
 npm run dev &
 FRONTEND_PID=$!
