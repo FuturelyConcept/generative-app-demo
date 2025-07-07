@@ -24,22 +24,31 @@ echo "🧠 Starting AI Runtime Engine Backend..."
 # Navigate to backend and start Python server
 cd backend
 
-# Activate virtual environment
-if [ -d "venv" ]; then
-    echo "🔧 Activating virtual environment..."
-    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-        source venv/Scripts/activate
-    else
-        source venv/bin/activate
-    fi
+# Create and activate virtual environment (only if it doesn't exist)
+if [ ! -d "venv" ]; then
+    echo "🔧 Creating virtual environment..."
+    python3 -m venv venv
+fi
+
+echo "🔧 Activating virtual environment..."
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    source venv/Scripts/activate
 else
-    echo "⚠️ Virtual environment not found. Please run setup first."
-    exit 1
+    source venv/bin/activate
+fi
+
+# Install Python dependencies (only if requirements changed)
+if [ ! -f "venv/.requirements_installed" ] || [ requirements-minimal.txt -nt venv/.requirements_installed ]; then
+    echo "🐍 Installing Python dependencies..."
+    pip install -r requirements-minimal.txt
+    touch venv/.requirements_installed
+else
+    echo "✅ Dependencies already installed"
 fi
 
 # Start backend
 echo "🤖 Starting Python AI Runtime Engine..."
-python main.py &
+python3 main.py &
 BACKEND_PID=$!
 
 # Wait for backend to start

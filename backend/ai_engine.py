@@ -42,21 +42,32 @@ class AIRuntimeEngine:
             }
     
     def _setup_ai_provider(self):
-        """Setup AI provider based on environment"""
-        provider = os.getenv('AI_PROVIDER', 'mock')
+        """Setup AI provider based on environment - NO FALLBACKS ALLOWED"""
+        provider = os.getenv('AI_PROVIDER')
+        
+        if not provider:
+            raise RuntimeError("CRITICAL: AI_PROVIDER not configured. Pure AI Runtime Engine requires a working AI provider.")
         
         if provider == 'huggingface':
             api_key = os.getenv('HF_API_KEY')
-            if api_key:
-                print(f"🚀 Initializing HuggingFace AI with real intelligence!")
-                return HuggingFaceProvider(api_key)
-            else:
-                print("⚠️ HF_API_KEY not found, falling back to mock AI")
-                return MockAIProvider()
+            if not api_key:
+                raise RuntimeError("CRITICAL: HF_API_KEY required for HuggingFace provider. Pure AI Runtime Engine cannot work without AI.")
+            print(f"🚀 Initializing HuggingFace AI with real intelligence!")
+            return HuggingFaceProvider(api_key)
         elif provider == 'ollama':
-            return OllamaProvider(os.getenv('OLLAMA_URL', 'http://localhost:11434'))
+            ollama_url = os.getenv('OLLAMA_URL', 'http://localhost:11434')
+            return OllamaProvider(ollama_url)
+        elif provider == 'openai':
+            api_key = os.getenv('OPENAI_API_KEY')
+            if not api_key:
+                raise RuntimeError("CRITICAL: OPENAI_API_KEY required for OpenAI provider. Pure AI Runtime Engine cannot work without AI.")
+            return OpenAIProvider(api_key)
+        elif provider == 'mock':
+            # Mock is only allowed if explicitly requested for development
+            print("⚠️ WARNING: Using Mock AI Provider. This is not a true Pure AI Runtime Engine.")
+            return MockAIProvider()
         else:
-            return MockAIProvider()  # Works without any setup
+            raise RuntimeError(f"CRITICAL: Unknown AI provider '{provider}'. Pure AI Runtime Engine requires a valid AI provider.")
     
     async def handle_request(self, path: str, method: str, user_role: str, data: Dict, headers: Dict) -> Dict:
         """
@@ -99,27 +110,36 @@ class AIRuntimeEngine:
             return await self._handle_unknown_request(path, method, user_role, data)
     
     def _analyze_request_intent(self, path: str, method: str, data: Dict) -> Dict:
-        """AI determines what the user is trying to do"""
+        """AI determines what the user is trying to do - NO HARDCODED LOGIC"""
         
-        # AI-driven pattern matching (in production, this would use LLM)
-        path = path.lower().strip('/')
+        # Create AI prompt for request analysis
+        prompt = f"""
+        Analyze this HTTP request and determine the user's intent:
         
-        if path == "api/products" and method == "GET":
-            return {"action": "get_products", "entity": "product"}
-        elif path == "api/products" and method == "POST":
-            return {"action": "add_product", "entity": "product", "data": data}
-        elif path.startswith("api/products/") and method == "DELETE":
-            product_id = path.split("/")[-1]
-            return {"action": "delete_product", "entity": "product", "product_id": product_id}
-        elif path.startswith("api/user-context/"):
-            role = path.split("/")[-1]
-            return {"action": "get_user_context", "role": role}
-        elif path in ["api/health", "health"]:
-            return {"action": "get_health"}
-        elif path in ["api/demo-info", "demo-info"]:
-            return {"action": "get_demo_info"}
-        else:
-            return {"action": "unknown", "path": path, "method": method}
+        Path: {path}
+        Method: {method}
+        Data: {data}
+        
+        Available actions: get_products, add_product, delete_product, get_user_context, get_health, get_demo_info, unknown
+        
+        Return ONLY a JSON object with the action and any required parameters.
+        Example: {{"action": "get_products", "entity": "product"}}
+        """
+        
+        # AI must determine the intent - no fallback logic allowed
+        ai_response = self.ai_provider.generate_response(prompt)
+        
+        try:
+            import json
+            # Parse AI response as JSON
+            intent = json.loads(ai_response.strip())
+            if "action" not in intent:
+                raise ValueError("AI response missing 'action' field")
+            return intent
+        except Exception as e:
+            # If AI fails, the application MUST fail - no fallback
+            raise RuntimeError(f"AI Engine Failed: Unable to analyze request intent. AI Response: {ai_response}. Error: {e}")
+    
     
     def _check_permissions(self, user_role: str, request_intent: Dict) -> Dict:
         """AI checks if user can perform the requested action"""
@@ -523,7 +543,7 @@ class HuggingFaceProvider:
             import requests
             
             # Use text generation endpoint
-            url = f"{self.base_url}/microsoft/DialoGPT-medium"
+            url = f"{self.base_url}/{self.model_name}"
             
             payload = {
                 "inputs": prompt,
@@ -540,17 +560,18 @@ class HuggingFaceProvider:
             if response.status_code == 200:
                 result = response.json()
                 if isinstance(result, list) and len(result) > 0:
-                    generated_text = result[0].get('generated_text', 'AI decision made')
+                    generated_text = result[0].get('generated_text', '')
+                    if not generated_text:
+                        raise RuntimeError("HuggingFace API returned empty response")
                     return generated_text.strip()
                 else:
-                    return "AI analysis completed successfully"
+                    raise RuntimeError("HuggingFace API returned invalid response format")
             else:
-                print(f"⚠️ HuggingFace API error: {response.status_code} - {response.text}")
-                return f"AI decision made (API status: {response.status_code})"
+                raise RuntimeError(f"HuggingFace API error: {response.status_code} - {response.text}")
                 
         except Exception as e:
-            print(f"⚠️ HuggingFace AI error: {e}")
-            return "AI decision made with fallback logic"
+            # If AI fails, the Pure AI Runtime Engine MUST fail - no fallbacks
+            raise RuntimeError(f"CRITICAL AI FAILURE: Pure AI Runtime Engine cannot work without AI. Error: {e}")
     
     def analyze_permission_request(self, user_role: str, action: str, resource: str) -> Dict:
         """AI-powered permission analysis"""
