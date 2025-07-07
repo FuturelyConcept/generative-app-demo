@@ -1,0 +1,21 @@
+# Minimal dependencies for AI Runtime Engine Demo
+# This version works with HuggingFace API calls only (no local models)
+
+# Core FastAPI framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# YAML processing for policies
+PyYAML==6.0.1
+
+# HTTP requests (for AI providers)
+requests==2.31.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Development and testing
+python-multipart==0.0.6
+
+# Note: This minimal version uses HuggingFace API calls only
+# No heavy AI model dependencies needed!
