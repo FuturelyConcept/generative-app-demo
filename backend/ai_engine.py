@@ -31,15 +31,13 @@ class AIRuntimeEngine:
         policies = {}
         policies_dir = "../POLICIES"
         
-        # List of policy files to load
-        policy_files = [
-            "access_control.yaml",
-            "business_rules.yaml", 
-            "ui_behavior.yaml",
-            "entities.yaml",
-            "ai_responses.yaml",
-            "system_config.yaml"
-        ]
+        # Dynamically discover all YAML policy files
+        policy_files = []
+        if os.path.exists(policies_dir):
+            for filename in os.listdir(policies_dir):
+                if filename.endswith('.yaml') and filename != 'README.md':
+                    policy_files.append(filename)
+            policy_files.sort()  # Sort for consistent loading order
         
         try:
             for policy_file in policy_files:
@@ -56,7 +54,7 @@ class AIRuntimeEngine:
             if not policies:
                 raise FileNotFoundError("No policy files found")
                 
-            print(f"🎯 Successfully loaded {len(policy_files)} policy files from POLICIES directory")
+            print(f"🎯 Successfully loaded {len(policy_files)} policy files from POLICIES directory: {', '.join(policy_files)}")
             return policies
             
         except Exception as e:
@@ -152,6 +150,8 @@ class AIRuntimeEngine:
             return await self._handle_health_check()
         elif request_intent["action"] == "get_demo_info":
             return await self._handle_demo_info()
+        elif request_intent["action"] == "get_categories":
+            return await self._handle_get_categories(user_role)
         else:
             return await self._handle_unknown_request(path, method, user_role, data)
     
@@ -430,6 +430,125 @@ class AIRuntimeEngine:
             ],
             "timestamp": self._get_timestamp()
         }
+    
+    async def _handle_get_categories(self, user_role: str) -> Dict:
+        """AI generates product categories response based on policies"""
+        
+        # Check permissions from loaded policies
+        access_policies = self.policies.get("access_policies", {})
+        user_policies = access_policies.get(user_role, {})
+        permissions = user_policies.get("permissions", [])
+        
+        # Check if categories feature is enabled and user has permission
+        categories_feature = self.policies.get("categories_feature", {})
+        if not categories_feature.get("enabled", False):
+            return await self._handle_unknown_request("api/categories", "GET", user_role, {})
+        
+        # Check role-based access from categories feature policies
+        access_control = categories_feature.get("access_control", {})
+        user_access = access_control.get(user_role, {})
+        
+        if not user_access.get("allowed", False):
+            message = user_access.get("message", f"Access denied for role '{user_role}'")
+            return {
+                "error": "Access Denied",
+                "message": message,
+                "user_role": user_role,
+                "feature": "categories",
+                "timestamp": self._get_timestamp()
+            }
+        
+        # Get aggregation rules from policies
+        aggregation_rules = categories_feature.get("aggregation_rules", {})
+        group_by_field = aggregation_rules.get("group_by_field", "category")
+        
+        # Get products and group by category
+        products = self.storage.get_products()
+        categories = {}
+        
+        for product in products:
+            category = product.get(group_by_field, "Unknown")
+            if category not in categories:
+                categories[category] = {
+                    "name": category,
+                    "product_count": 0,
+                    "total_inventory_value": 0,
+                    "total_stock_units": 0,
+                    "low_stock_alerts": 0,
+                    "products": []
+                }
+            
+            price = product.get("price", 0)
+            stock = product.get("stock", 0)
+            value = price * stock
+            
+            categories[category]["product_count"] += 1
+            categories[category]["total_inventory_value"] += value
+            categories[category]["total_stock_units"] += stock
+            categories[category]["products"].append(product)
+            
+            if stock < 20:
+                categories[category]["low_stock_alerts"] += 1
+        
+        # Build response based on role access level
+        access_level = user_access.get("access_level", "basic")
+        features = user_access.get("features", [])
+        
+        category_list = []
+        total_value = sum(cat["total_inventory_value"] for cat in categories.values())
+        
+        for category_data in categories.values():
+            # Calculate metrics
+            if category_data["product_count"] > 0:
+                total_price = sum(p.get("price", 0) for p in category_data["products"])
+                average_price = total_price / category_data["product_count"]
+            else:
+                average_price = 0
+            
+            percentage = (category_data["total_inventory_value"] / total_value * 100) if total_value > 0 else 0
+            
+            # Build category info based on access level
+            category_info = {
+                "name": category_data["name"],
+                "product_count": category_data["product_count"],
+                "total_inventory_value": round(category_data["total_inventory_value"], 2)
+            }
+            
+            # Add features based on policy configuration
+            if "basic_analytics" in features:
+                category_info["low_stock_alerts"] = category_data["low_stock_alerts"]
+            
+            if "advanced_metrics" in features:
+                category_info.update({
+                    "average_product_price": round(average_price, 2),
+                    "total_stock_units": category_data["total_stock_units"],
+                    "percentage_of_total": round(percentage, 1)
+                })
+            
+            category_list.append(category_info)
+        
+        # Sort according to policy rules
+        sorting = aggregation_rules.get("sorting", {})
+        sort_by = sorting.get("default_sort", "total_inventory_value")
+        reverse_order = sorting.get("sort_order", "DESC") == "DESC"
+        
+        category_list.sort(key=lambda x: x.get(sort_by, 0), reverse=reverse_order)
+        
+        # Get response format from policies
+        response_formats = categories_feature.get("response_formats", {})
+        user_response_format = response_formats.get(f"{user_role}_response", {})
+        
+        response = {
+            "categories": category_list,
+            "user_role": user_role,
+            "access_level": access_level,
+            "features_available": features,
+            "message": user_response_format.get("message", f"Categories for {user_role}"),
+            "timestamp": self._get_timestamp(),
+            "generated_by": "AI Runtime Engine - Policy-Driven Categories"
+        }
+        
+        return response
     
     async def _handle_unknown_request(self, path: str, method: str, user_role: str, data: Dict) -> Dict:
         """AI handles requests it doesn't recognize"""

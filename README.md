@@ -155,6 +155,10 @@ ai-runtime-demo/
 │   ├── ai_responses.yaml      # AI response templates
 │   ├── system_config.yaml     # Technical configuration
 │   └── README.md              # Policy documentation
+├── 🧪 TEST/                   # Demo New Features
+│   ├── categories_feature.yaml      # NEW: Product categories feature
+│   ├── extended_ai_prompts.yaml     # NEW: Extended AI capabilities
+│   └── README.md                    # How to add features via policies
 ├── 🤖 backend/                # AI Engine
 │   ├── main.py                # Single catch-all endpoint
 │   ├── ai_engine.py           # THE ENTIRE APPLICATION LOGIC
@@ -292,6 +296,9 @@ Use the "API Tester" tab to experiment with any endpoint. The AI handles unknown
 ### 4. Live Policy Changes
 Edit any file in `POLICIES/` directory and see application behavior change without restarting.
 
+### 5. Add Complete New Features 
+Use the `TEST/` directory to demonstrate adding entire new API endpoints and functionality by just copying policy files. See `TEST/README.md` for the **Product Categories** feature demo.
+
 ## 🔒 Security & Best Practices
 
 ### Environment Variables
@@ -352,6 +359,13 @@ npm run dev
 2. Add new permission or UI element
 3. Refresh frontend - see instant changes
 4. No restart required!
+
+### Scenario 4: Add Complete New Features via Policies
+1. Navigate to `TEST/` directory
+2. Follow instructions in `TEST/README.md`
+3. Copy new policy files to `POLICIES/` directory
+4. Restart app - complete new API endpoint + functionality appears!
+5. **ZERO code changes required!**
 
 ## 🌟 Revolutionary Implications
 

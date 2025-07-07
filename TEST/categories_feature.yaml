@@ -1,0 +1,72 @@
+# Categories Feature - NEW FUNCTIONALITY VIA POLICY!
+# Copy this file to POLICIES/ folder and restart to add Product Categories feature
+# This demonstrates adding complete new API endpoints via policies only
+
+categories_feature:
+  enabled: true
+  description: "Product category analytics and breakdown feature"
+  
+  # New endpoint definition
+  endpoint:
+    path: "/api/categories"
+    methods: ["GET"]
+    description: "Get product breakdown by categories with analytics"
+  
+  # Role-based access for new feature
+  access_control:
+    viewer: 
+      allowed: false
+      message: "Category analytics require manager or admin access"
+    manager:
+      allowed: true
+      access_level: "business_insights"
+      features: ["category_list", "basic_analytics"]
+    admin:
+      allowed: true
+      access_level: "full_analytics" 
+      features: ["category_list", "basic_analytics", "advanced_metrics", "trend_analysis"]
+
+  # New UI elements this feature adds
+  ui_components:
+    category_navigation:
+      visible_to: ["manager", "admin"]
+      location: "main_menu"
+      label: "📊 Categories"
+      icon: "chart-bar"
+    
+    category_dashboard:
+      visible_to: ["admin"]
+      location: "admin_panel"
+      label: "Category Management"
+      description: "Advanced category analytics and management"
+
+  # Business logic for category aggregations
+  aggregation_rules:
+    group_by_field: "category"
+    metrics:
+      product_count: "COUNT of products per category"
+      total_inventory_value: "SUM of (price * stock) per category"
+      average_product_price: "AVERAGE price per category"
+      total_stock_units: "SUM of stock per category"
+      low_stock_alerts: "COUNT of products with stock < 20 per category"
+      percentage_of_total: "Percentage of total inventory value"
+    
+    sorting:
+      default_sort: "total_inventory_value"
+      sort_order: "DESC"
+    
+    formatting:
+      currency_symbol: "$"
+      decimal_places: 2
+      include_percentages: true
+
+  # Response templates for different roles
+  response_formats:
+    manager_response:
+      include: ["product_count", "total_inventory_value", "low_stock_alerts"]
+      message: "Category insights for business planning"
+      
+    admin_response:
+      include: ["product_count", "total_inventory_value", "average_product_price", "total_stock_units", "low_stock_alerts", "percentage_of_total"]
+      message: "Complete category analytics and management data"
+      additional_insights: true

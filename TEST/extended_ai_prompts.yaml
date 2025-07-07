@@ -1,0 +1,55 @@
+# Extended AI Prompts - ADDS CATEGORIES FUNCTIONALITY
+# Copy this file to POLICIES/ folder to extend AI understanding
+# This teaches the AI about the new categories endpoint
+
+extended_ai_capabilities:
+  # Additional actions the AI can recognize
+  new_actions:
+    - action: "get_categories"
+      description: "Retrieve product categories with analytics"
+      endpoint_pattern: "/api/categories"
+      methods: ["GET"]
+      required_permission: "view_categories"
+  
+  # Extended permission definitions
+  extended_permissions:
+    view_categories:
+      description: "Access to category analytics and breakdowns"
+      required_roles: ["manager", "admin"]
+      denied_roles: ["viewer"]
+
+# Enhanced AI request analysis prompt
+enhanced_request_analysis: |
+  Analyze this HTTP request and determine the user's intent.
+  
+  Path: {path}
+  Method: {method}
+  Data: {data}
+  
+  Available actions: get_products, add_product, delete_product, get_user_context, get_health, get_demo_info, get_categories, unknown
+  
+  Return ONLY a JSON object with the action and any required parameters. Do NOT include any other text or explanation.
+  
+  Examples:
+  - For GET /api/products: {"action": "get_products"}
+  - For POST /api/products: {"action": "add_product"}
+  - For DELETE /api/products/p4: {"action": "delete_product", "product_id": "p4"}
+  - For GET /api/categories: {"action": "get_categories"}
+  - For GET /api/user-context/admin: {"action": "get_user_context", "role": "admin"}
+  
+  IMPORTANT: 
+  - For delete operations, use "product_id" field name, not "entity"
+  - For category requests, use "get_categories" action
+  - Categories endpoint only supports GET method
+
+# Response templates for categories
+categories_responses:
+  success_templates:
+    get_categories: "Product categories retrieved and analyzed successfully"
+    
+  error_templates:
+    categories_access_denied: "Access denied - Category analytics require manager or admin privileges"
+    categories_method_not_allowed: "Categories endpoint only supports GET requests"
+    
+  info_templates:
+    categories_help: "Use /api/categories to view product breakdown by category (manager/admin only)"
