@@ -11,6 +11,8 @@ export default function Home() {
   const [uiResponse, setUIResponse] = useState<AIUIResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [apiResponse, setApiResponse] = useState<any>(null);
+  const [apiLoading, setApiLoading] = useState(false);
 
   useEffect(() => {
     loadAIUI();
@@ -82,6 +84,7 @@ export default function Home() {
     if (newView === 'api') {
       setUIResponse(null);
       setError(null);
+      setApiResponse(null);
     }
   };
 
@@ -153,7 +156,6 @@ export default function Home() {
                 {[
                   { key: 'products', label: '📦 Products' },
                   { key: 'categories', label: '📊 Categories' },
-                  { key: 'context', label: '👤 User Context' },
                   { key: 'api', label: '🧪 API Tester' }
                 ].map((view) => (
                   <button
@@ -230,99 +232,134 @@ export default function Home() {
 
             {/* API Tester View */}
             {activeView === 'api' && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="font-semibold mb-4">🧪 Dynamic API Tester</h3>
-                <div className="space-y-4">
-                  <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
-                    <p className="text-sm text-yellow-700">
-                      This shows how the AI handles ANY request dynamically. Try different endpoints and see how the AI responds based on your role ({currentRole}).
-                    </p>
-                  </div>
-                  
+              <div className="space-y-6">
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="font-semibold mb-4">🧪 Dynamic API Tester</h3>
                   <div className="space-y-4">
-                    {[
-                      { method: 'GET', path: '/api/products', desc: 'Get products (all roles)' },
-                      { method: 'POST', path: '/api/products', desc: 'Add product (admin/manager only)', requiresBody: true },
-                      { method: 'DELETE', path: '/api/products/p1', desc: 'Delete product (admin only)' },
-                      { method: 'GET', path: '/api/categories', desc: 'Get category analytics (manager/admin only)' },
-                      { method: 'GET', path: '/api/user-context/' + currentRole, desc: 'Get user context' },
-                      { method: 'GET', path: '/api/user-context/admin', desc: 'Get admin context (test access)' },
-                      { method: 'GET', path: '/api/user-context/manager', desc: 'Get manager context (test access)' },
-                      { method: 'GET', path: '/api/user-context/viewer', desc: 'Get viewer context (test access)' },
-                      { method: 'GET', path: '/api/health', desc: 'Health check endpoint' },
-                      { method: 'GET', path: '/api/demo-info', desc: 'Demo information' },
-                      { method: 'GET', path: '/api/unknown-endpoint', desc: 'Test unknown endpoint (should return AI response)' },
-                      { method: 'POST', path: '/api/random-endpoint', desc: 'Test POST to unknown endpoint' }
-                    ].map((api, idx) => (
-                      <div key={idx} className="border border-gray-200 rounded-lg">
-                        <div className="p-4 bg-gray-50 border-b">
-                          <div className="flex items-center justify-between">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
+                      <p className="text-sm text-yellow-700">
+                        This shows how the AI handles ANY request dynamically. Try different endpoints and see how the AI responds based on your role ({currentRole}).
+                      </p>
+                    </div>
+                  
+                    <div className="space-y-4">
+                      {[
+                        { method: 'GET', path: '/api/products', desc: 'Get products (all roles)' },
+                        { method: 'POST', path: '/api/products', desc: 'Add product (admin/manager only)' },
+                        { method: 'DELETE', path: '/api/products/p1', desc: 'Delete product (admin only)' },
+                        { method: 'GET', path: '/api/categories', desc: 'Get category analytics (manager/admin only)' },
+                        { method: 'GET', path: '/api/health', desc: 'Health check endpoint' },
+                        { method: 'GET', path: '/api/demo-info', desc: 'Demo information' },
+                        { method: 'GET', path: '/api/unknown-endpoint', desc: 'Test unknown endpoint (AI handles anything)' }
+                      ].map((api, idx) => (
+                        <div key={idx} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
                             <div>
                               <div className="font-medium text-gray-900">{api.method} {api.path}</div>
-                              <div className="text-sm text-gray-600 mt-1">{api.desc}</div>
+                              <div className="text-sm text-gray-600">{api.desc}</div>
                             </div>
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => {
-                                  window.open(
-                                    `http://localhost:8000${api.path}`,
-                                    '_blank'
-                                  );
-                                }}
-                                className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm font-medium transition-colors"
-                              >
-                                🔗 Open
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    const requestBody = api.requiresBody ? {
-                                      name: 'Test Product',
+                            <button
+                              onClick={async () => {
+                                setApiLoading(true);
+                                setApiResponse(null);
+                                
+                                try {
+                                  let requestBody = undefined;
+                                  if (api.method === 'POST' && api.path === '/api/products') {
+                                    requestBody = {
+                                      name: 'API Test Product',
                                       category: 'Electronics',
                                       price: 99.99,
-                                      stock: 10
-                                    } : undefined;
-
-                                    const response = await fetch(`http://localhost:8000${api.path}`, {
-                                      method: api.method,
-                                      headers: {
-                                        'X-User-Role': currentRole,
-                                        'Content-Type': 'application/json'
-                                      },
-                                      ...(requestBody && { body: JSON.stringify(requestBody) })
-                                    });
-                                    const data = await response.json();
-                                    
-                                    // Show result in a simple modal/alert for now
-                                    const resultWindow = window.open('', '_blank', 'width=800,height=600');
-                                    if (resultWindow) {
-                                      resultWindow.document.write(`
-                                        <html>
-                                          <head><title>API Response</title></head>
-                                          <body style="font-family: monospace; padding: 20px;">
-                                            <h3>${api.method} ${api.path}</h3>
-                                            <p><strong>Status:</strong> ${response.status}</p>
-                                            <p><strong>Role:</strong> ${currentRole}</p>
-                                            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow: auto;">${JSON.stringify(data, null, 2)}</pre>
-                                          </body>
-                                        </html>
-                                      `);
-                                    }
-                                  } catch (error) {
-                                    alert(`Error: ${error}`);
+                                      stock: 25
+                                    };
                                   }
-                                }}
-                                className="px-3 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded text-sm font-medium transition-colors"
-                              >
-                                🧪 Test
-                              </button>
-                            </div>
+
+                                  const response = await fetch(`http://localhost:8000${api.path}`, {
+                                    method: api.method,
+                                    headers: {
+                                      'X-User-Role': currentRole,
+                                      'Content-Type': 'application/json'
+                                    },
+                                    ...(requestBody && { body: JSON.stringify(requestBody) })
+                                  });
+                                  
+                                  const data = await response.json();
+                                  
+                                  setApiResponse({
+                                    request: {
+                                      method: api.method,
+                                      path: api.path,
+                                      role: currentRole,
+                                      body: requestBody
+                                    },
+                                    response: {
+                                      status: response.status,
+                                      data: data
+                                    }
+                                  });
+                                } catch (error) {
+                                  setApiResponse({
+                                    request: {
+                                      method: api.method,
+                                      path: api.path,
+                                      role: currentRole
+                                    },
+                                    response: {
+                                      status: 'Error',
+                                      data: { error: String(error) }
+                                    }
+                                  });
+                                } finally {
+                                  setApiLoading(false);
+                                }
+                              }}
+                              disabled={apiLoading}
+                              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-sm font-medium transition-colors"
+                            >
+                              {apiLoading ? '⏳ Testing...' : '🧪 Test API'}
+                            </button>
                           </div>
+                          
+                          {api.method === 'POST' && api.path === '/api/products' && (
+                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded mt-2">
+                              <strong>POST Body:</strong> {JSON.stringify({name: 'API Test Product', category: 'Electronics', price: 99.99, stock: 25})}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
+
+                {/* API Response Display */}
+                {apiResponse && (
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h4 className="font-semibold mb-4">🔍 API Response</h4>
+                    
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 p-4 rounded">
+                        <h5 className="font-medium text-blue-800 mb-2">Request</h5>
+                        <div className="text-sm text-blue-700">
+                          <div><strong>Method:</strong> {apiResponse.request.method}</div>
+                          <div><strong>Path:</strong> {apiResponse.request.path}</div>
+                          <div><strong>Role:</strong> {apiResponse.request.role}</div>
+                          {apiResponse.request.body && (
+                            <div><strong>Body:</strong> <pre className="mt-1 bg-white p-2 rounded text-xs overflow-x-auto">{JSON.stringify(apiResponse.request.body, null, 2)}</pre></div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gray-50 p-4 rounded">
+                        <h5 className="font-medium text-gray-800 mb-2">Response</h5>
+                        <div className="text-sm">
+                          <div className="mb-2"><strong>Status:</strong> <span className={apiResponse.response.status === 200 ? 'text-green-600' : 'text-red-600'}>{apiResponse.response.status}</span></div>
+                          <div><strong>Data:</strong></div>
+                          <pre className="mt-1 bg-white p-3 rounded text-xs overflow-x-auto border">{JSON.stringify(apiResponse.response.data, null, 2)}</pre>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

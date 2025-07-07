@@ -410,19 +410,19 @@ class AIRuntimeEngine:
                 })
         
         elif view_type == "categories":
-            # Categories analytics component
-            if "view" in permissions:
+            # Simple categories table - keep it simple for concept demo
+            if "view_categories" in permissions:
                 ui_config["components"].append({
-                    "id": "categories-analytics",
-                    "type": "analytics", 
+                    "id": "categories-table",
+                    "type": "table", 
                     "props": {
-                        "title": "Category Analytics",
+                        "title": "Product Categories",
                         "data": data.get("categories", []),
-                        "metrics": ["product_count", "total_inventory_value", "low_stock_alerts"],
-                        "chartType": "bar"
+                        "columns": ["name", "product_count"],
+                        "actions": []
                     },
                     "data": data.get("categories", []),
-                    "permissions": ["view"],
+                    "permissions": ["view_categories"],
                     "visible_to": ["manager", "admin"],
                     "position": {"section": "main", "order": 1}
                 })
