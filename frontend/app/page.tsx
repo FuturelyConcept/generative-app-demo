@@ -13,6 +13,21 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [apiResponse, setApiResponse] = useState<any>(null);
   const [apiLoading, setApiLoading] = useState(false);
+  const [editableEndpoints, setEditableEndpoints] = useState([
+    { method: 'GET', path: '/api/products', desc: 'Get products (all roles)' },
+    { method: 'POST', path: '/api/products', desc: 'Add product (admin/manager only)' },
+    { method: 'DELETE', path: '/api/products/p1', desc: 'Delete product (admin only)' },
+    { method: 'GET', path: '/api/categories', desc: 'Get category analytics (manager/admin only)' },
+    { method: 'GET', path: '/api/health', desc: 'Health check endpoint' },
+    { method: 'GET', path: '/api/demo-info', desc: 'Demo information' },
+    { method: 'GET', path: '/api/unknown-endpoint', desc: 'Test unknown endpoint (AI handles anything)' }
+  ]);
+  const [editableRequestBody, setEditableRequestBody] = useState(JSON.stringify({
+    name: 'API Test Product',
+    category: 'Electronics',
+    price: 99.99,
+    stock: 25
+  }, null, 2));
 
   useEffect(() => {
     loadAIUI();
@@ -248,19 +263,37 @@ export default function Home() {
                     </div>
                   
                     <div className="space-y-4">
-                      {[
-                        { method: 'GET', path: '/api/products', desc: 'Get products (all roles)' },
-                        { method: 'POST', path: '/api/products', desc: 'Add product (admin/manager only)' },
-                        { method: 'DELETE', path: '/api/products/p1', desc: 'Delete product (admin only)' },
-                        { method: 'GET', path: '/api/categories', desc: 'Get category analytics (manager/admin only)' },
-                        { method: 'GET', path: '/api/health', desc: 'Health check endpoint' },
-                        { method: 'GET', path: '/api/demo-info', desc: 'Demo information' },
-                        { method: 'GET', path: '/api/unknown-endpoint', desc: 'Test unknown endpoint (AI handles anything)' }
-                      ].map((api, idx) => (
+                      {editableEndpoints.map((api, idx) => (
                         <div key={idx} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <div className="font-medium text-gray-900">{api.method} {api.path}</div>
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <select
+                                  value={api.method}
+                                  onChange={(e) => {
+                                    const newEndpoints = [...editableEndpoints];
+                                    newEndpoints[idx].method = e.target.value;
+                                    setEditableEndpoints(newEndpoints);
+                                  }}
+                                  className="border rounded px-2 py-1 text-sm font-medium"
+                                >
+                                  <option value="GET">GET</option>
+                                  <option value="POST">POST</option>
+                                  <option value="PUT">PUT</option>
+                                  <option value="DELETE">DELETE</option>
+                                  <option value="PATCH">PATCH</option>
+                                </select>
+                                <input
+                                  type="text"
+                                  value={api.path}
+                                  onChange={(e) => {
+                                    const newEndpoints = [...editableEndpoints];
+                                    newEndpoints[idx].path = e.target.value;
+                                    setEditableEndpoints(newEndpoints);
+                                  }}
+                                  className="flex-1 border rounded px-2 py-1 text-sm font-mono"
+                                />
+                              </div>
                               <div className="text-sm text-gray-600">{api.desc}</div>
                             </div>
                             <button
@@ -270,13 +303,12 @@ export default function Home() {
                                 
                                 try {
                                   let requestBody = undefined;
-                                  if (api.method === 'POST' && api.path === '/api/products') {
-                                    requestBody = {
-                                      name: 'API Test Product',
-                                      category: 'Electronics',
-                                      price: 99.99,
-                                      stock: 25
-                                    };
+                                  if (api.method === 'POST' || api.method === 'PUT' || api.method === 'PATCH') {
+                                    try {
+                                      requestBody = JSON.parse(editableRequestBody);
+                                    } catch (e) {
+                                      throw new Error('Invalid JSON in request body');
+                                    }
                                   }
 
                                   const response = await fetch(`http://localhost:8000${api.path}`, {
@@ -325,9 +357,15 @@ export default function Home() {
                             </button>
                           </div>
                           
-                          {api.method === 'POST' && api.path === '/api/products' && (
-                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded mt-2">
-                              <strong>POST Body:</strong> {JSON.stringify({name: 'API Test Product', category: 'Electronics', price: 99.99, stock: 25})}
+                          {(api.method === 'POST' || api.method === 'PUT' || api.method === 'PATCH') && (
+                            <div className="mt-3">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Request Body (JSON):</label>
+                              <textarea
+                                value={editableRequestBody}
+                                onChange={(e) => setEditableRequestBody(e.target.value)}
+                                className="w-full border rounded px-3 py-2 text-sm font-mono h-32 resize-none"
+                                placeholder="Enter JSON request body"
+                              />
                             </div>
                           )}
                         </div>
