@@ -1,4 +1,4 @@
-# 🚀 AI Runtime Engine Demo - Pure Zero-Code Application
+# 🚀 Generative App Demo - Zero-Code Native Gen AI Application
 
 > **Revolutionary Concept**: **AI + DATA + POLICIES = Complete Application**
 
@@ -165,7 +165,7 @@ curl -X DELETE -H "X-User-Role: admin" \
 
 ### Project Structure (AI + DATA + POLICIES)
 ```
-ai-runtime-demo/
+generative-app-demo/
 ├── 📊 DATA/                    # Application Data
 │   ├── users.json             # User definitions & roles
 │   ├── products.json          # Product inventory
