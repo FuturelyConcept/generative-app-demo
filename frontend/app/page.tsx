@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AIUIRenderer } from '../components/AIUIRenderer';
 import { aiUIClient, AIUIResponse } from '../lib/ai-ui-client';
+import { aiClient } from '../lib/ai-client';
 import { ChevronDown, RefreshCw } from 'lucide-react';
 
 export default function Home() {
@@ -28,10 +29,30 @@ export default function Home() {
     price: 99.99,
     stock: 25
   }, null, 2));
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [menuLoading, setMenuLoading] = useState(false);
 
   useEffect(() => {
     loadAIUI();
+    loadMenuItems();
   }, [currentRole, activeView]);
+
+  const loadMenuItems = async () => {
+    setMenuLoading(true);
+    try {
+      const response = await aiClient.getMenuItems(currentRole);
+      setMenuItems(response.menu_items || []);
+    } catch (error) {
+      console.error('Failed to load menu items:', error);
+      // Fallback to basic menu items
+      setMenuItems([
+        { key: 'products', label: '📦 Products', visible_to: ['viewer', 'manager', 'admin'] },
+        { key: 'api', label: '🧪 API Tester', visible_to: ['viewer', 'manager', 'admin'] }
+      ]);
+    } finally {
+      setMenuLoading(false);
+    }
+  };
 
   const loadAIUI = async () => {
     setIsLoading(true);
@@ -110,6 +131,7 @@ export default function Home() {
 
   const handleRefresh = () => {
     loadAIUI();
+    loadMenuItems();
   };
 
   return (
@@ -173,23 +195,26 @@ export default function Home() {
             <div className="bg-white rounded-lg shadow p-4">
               <h3 className="font-medium text-gray-900 mb-3">AI Views</h3>
               <div className="space-y-2">
-                {[
-                  { key: 'products', label: '📦 Products' },
-                  { key: 'categories', label: '📊 Categories' },
-                  { key: 'api', label: '🧪 API Tester' }
-                ].map((view) => (
-                  <button
-                    key={view.key}
-                    onClick={() => handleViewChange(view.key)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                      activeView === view.key
-                        ? 'bg-blue-100 text-blue-700 font-medium'
-                        : 'hover:bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {view.label}
-                  </button>
-                ))}
+                {menuLoading ? (
+                  <div className="text-center py-4">
+                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-500">Loading menu...</p>
+                  </div>
+                ) : (
+                  menuItems.map((view) => (
+                    <button
+                      key={view.key}
+                      onClick={() => handleViewChange(view.key)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                        activeView === view.key
+                          ? 'bg-blue-100 text-blue-700 font-medium'
+                          : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {view.label}
+                    </button>
+                  ))
+                )}
               </div>
               
               <button

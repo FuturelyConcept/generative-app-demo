@@ -175,6 +175,18 @@ export class AIRuntimeClient {
   }
 
   /**
+   * Get available menu items based on loaded policies
+   */
+  async getMenuItems(userRole: string): Promise<AIResponse> {
+    return this.makeRequest('/api/menu-items', {
+      method: 'GET',
+      headers: {
+        'X-User-Role': userRole
+      }
+    });
+  }
+
+  /**
    * Health check
    */
   async healthCheck(): Promise<AIResponse> {

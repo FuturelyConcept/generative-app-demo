@@ -199,6 +199,8 @@ class AIRuntimeEngine:
         elif request_intent["action"] == "get_categories":
             print(f"DEBUG: handle_request is about to call _handle_get_categories for action: {request_intent['action']}")
             return await self._handle_get_categories(user_role, is_ui_request)
+        elif request_intent["action"] == "get_menu_items":
+            return await self._handle_get_menu_items(user_role)
         else:
             return await self._handle_unknown_request(path, method, user_role, data)
     
@@ -213,7 +215,7 @@ class AIRuntimeEngine:
         Method: {method}
         Data: {data}
         
-        Available actions: get_products, add_product, delete_product, get_user_context, get_health, get_demo_info, get_categories, unknown
+        Available actions: get_products, add_product, delete_product, get_user_context, get_health, get_demo_info, get_categories, get_menu_items, unknown
         
         Return ONLY a JSON object with the action and any required parameters. Do NOT include any other text or explanation.
         
@@ -223,6 +225,7 @@ class AIRuntimeEngine:
         - For DELETE /api/products/p4: {{"action": "delete_product", "product_id": "p4"}}
         - For GET /api/user-context/admin: {{"action": "get_user_context", "role": "admin"}}
         - For GET /api/categories: {{"action": "get_categories"}}
+        - For GET /api/menu-items: {{"action": "get_menu_items"}}
         
         IMPORTANT: For delete operations, use "product_id" field name, not "entity".
         """
@@ -258,7 +261,8 @@ class AIRuntimeEngine:
             "get_user_context": "view",
             "get_health": "view",
             "get_demo_info": "view",
-            "get_categories": "view"
+            "get_categories": "view",
+            "get_menu_items": "view"
         }
         
         required_permission = action_permission_map.get(request_intent["action"])
@@ -771,6 +775,64 @@ class AIRuntimeEngine:
             response["ui_instructions"] = ui_instructions
         
         return response
+    
+    async def _handle_get_menu_items(self, user_role: str) -> Dict:
+        """AI generates available menu items based on loaded policies"""
+        
+        # Base menu items always available
+        menu_items = [
+            {
+                "key": "products",
+                "label": "📦 Products",
+                "visible_to": ["viewer", "manager", "admin"],
+                "endpoint": "/api/products",
+                "source": "base"
+            }
+        ]
+        
+        # Check if categories feature is enabled and user has access
+        categories_feature = self.policies.get("categories_feature", {})
+        if categories_feature.get("enabled", False):
+            # Check if user has access to categories
+            access_control = categories_feature.get("access_control", {})
+            user_access = access_control.get(user_role, {})
+            
+            if user_access.get("allowed", False):
+                # Get UI component configuration
+                ui_components = categories_feature.get("ui_components", {})
+                category_nav = ui_components.get("category_navigation", {})
+                
+                if category_nav and user_role in category_nav.get("visible_to", []):
+                    menu_items.append({
+                        "key": "categories",
+                        "label": category_nav.get("label", "📊 Categories"),
+                        "visible_to": category_nav.get("visible_to", []),
+                        "endpoint": "/api/categories",
+                        "source": "categories_feature"
+                    })
+        
+        # API Tester is always available
+        menu_items.append({
+            "key": "api",
+            "label": "🧪 API Tester",
+            "visible_to": ["viewer", "manager", "admin"],
+            "endpoint": "/api-tester",
+            "source": "base"
+        })
+        
+        # Filter menu items based on user role
+        available_menu_items = []
+        for item in menu_items:
+            if user_role in item.get("visible_to", []):
+                available_menu_items.append(item)
+        
+        return {
+            "menu_items": available_menu_items,
+            "user_role": user_role,
+            "generated_by": "AI Runtime Engine - Policy-Driven Menu",
+            "policies_loaded": list(self.policies.keys()),
+            "timestamp": self._get_timestamp()
+        }
     
     async def _handle_unknown_request(self, path: str, method: str, user_role: str, data: Dict) -> Dict:
         """AI handles requests it doesn't recognize"""
