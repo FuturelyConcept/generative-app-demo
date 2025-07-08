@@ -30,6 +30,9 @@ export function CategoryAnalytics({
   theme, 
   onAction 
 }: CategoryAnalyticsProps) {
+  console.log("CategoryAnalytics: Component rendered.");
+  console.log("CategoryAnalytics: Data prop:", data);
+  console.log("CategoryAnalytics: Metrics prop:", metrics);
   const getThemeClasses = () => {
     const colorMap = {
       red: 'border-red-200 bg-red-50',

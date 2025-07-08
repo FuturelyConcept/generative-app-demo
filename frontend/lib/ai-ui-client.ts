@@ -85,121 +85,144 @@ export class AIUIClient {
 
   private transformToAIUIResponse(backendData: any, userRole: string, endpoint: string): AIUIResponse {
     // Extract UI configuration from backend response
-    const permissions = backendData.permissions || [];
+    let permissions = backendData.permissions || [];
     const ui_elements = backendData.ui_elements || [];
     const theme = backendData.theme || { color: 'blue', style: 'minimal', components: [] };
 
-    // Generate UI components based on the endpoint and user permissions
-    const components: UIComponent[] = [];
-    
-    // Add navigation based on permissions
-    const navigation: NavigationItem[] = [
-      {
-        label: '📦 Products',
-        endpoint: '/api/products',
-        visible_to: ['viewer', 'manager', 'admin'],
-        active: endpoint.includes('products')
-      }
-    ];
+    let components: UIComponent[] = [];
+    let navigation: NavigationItem[] = [];
+    let layout = this.getLayoutForRole(userRole);
 
-    // Add categories navigation if user has permission
-    if (permissions.includes('view_categories') || userRole === 'admin' || userRole === 'manager') {
-      navigation.push({
-        label: '📊 Categories',
-        endpoint: '/api/categories',
-        visible_to: ['manager', 'admin'],
-        active: endpoint.includes('categories')
-      });
-    }
+    // Prioritize UI instructions from the backend if available
+    if (backendData.ui_instructions) {
+      console.log("ai-ui-client: Using UI instructions from backend.", backendData.ui_instructions);
+      components = backendData.ui_instructions.components || [];
+      navigation = backendData.ui_instructions.navigation || [];
+      layout = backendData.ui_instructions.layout || layout;
+      permissions = backendData.ui_instructions.permissions || permissions; // Correctly extract permissions
+    } else {
+      // Fallback to client-side UI generation if no backend instructions
+      console.log("ai-ui-client: No UI instructions from backend, falling back to client-side generation.");
+      // Add navigation based on permissions
+      navigation = [
+        {
+          label: '📦 Products',
+          endpoint: '/api/products',
+          visible_to: ['viewer', 'manager', 'admin'],
+          active: endpoint.includes('products')
+        }
+      ];
 
-    // Generate components based on endpoint and data
-    if (endpoint.includes('products') && backendData.products) {
-      components.push({
-        id: 'products-table',
-        type: 'table',
-        props: {
-          title: 'Product Inventory',
-          data: backendData.products,
-          columns: ['name', 'category', 'price', 'stock'],
-          actions: this.getTableActions(permissions)
-        },
-        data: backendData.products,
-        permissions: ['view'],
-        visible_to: ['viewer', 'manager', 'admin'],
-        position: { section: 'main', order: 1 }
-      });
-
-      // Add form if user can add products
-      if (permissions.includes('add')) {
-        components.push({
-          id: 'add-product-form',
-          type: 'form',
-          props: {
-            title: 'Add New Product',
-            fields: [
-              { name: 'name', type: 'text', required: true, label: 'Product Name' },
-              { name: 'category', type: 'select', required: true, label: 'Category', 
-                options: ['Electronics', 'Furniture', 'Stationery'] },
-              { name: 'price', type: 'number', required: true, label: 'Price', min: 0.01 },
-              { name: 'stock', type: 'number', required: true, label: 'Stock', min: 0 }
-            ],
-            submitEndpoint: '/api/products',
-            submitMethod: 'POST'
-          },
-          permissions: ['add'],
+      // Add categories navigation if user has permission
+      if (permissions.includes('view_categories') || userRole === 'admin' || userRole === 'manager') {
+        navigation.push({
+          label: '📊 Categories',
+          endpoint: '/api/categories',
           visible_to: ['manager', 'admin'],
-          position: { section: 'main', order: 2 }
+          active: endpoint.includes('categories')
+        });
+      }
+
+      // Generate components based on endpoint and data
+      if (endpoint.includes('products') && backendData.products) {
+        components.push({
+          id: 'products-table',
+          type: 'table',
+          props: {
+            title: 'Product Inventory',
+            data: backendData.products,
+            columns: ['name', 'category', 'price', 'stock'],
+            actions: this.getTableActions(permissions)
+          },
+          data: backendData.products,
+          permissions: ['view'],
+          visible_to: ['viewer', 'manager', 'admin'],
+          position: { section: 'main', order: 1 }
+        });
+
+        // Add form if user can add products
+        if (permissions.includes('add')) {
+          components.push({
+            id: 'add-product-form',
+            type: 'form',
+            props: {
+              title: 'Add New Product',
+              fields: [
+                { name: 'name', type: 'text', required: true, label: 'Product Name' },
+                { name: 'category', type: 'select', required: true, label: 'Category', 
+                  options: ['Electronics', 'Furniture', 'Stationery'] },
+                { name: 'price', type: 'number', required: true, label: 'Price', min: 0.01 },
+                { name: 'stock', type: 'number', required: true, label: 'Stock', min: 0 }
+              ],
+              submitEndpoint: '/api/products',
+              submitMethod: 'POST'
+            },
+            permissions: ['add'],
+            visible_to: ['manager', 'admin'],
+            position: { section: 'main', order: 2 }
+          });
+        }
+      }
+
+      if (endpoint.includes('categories') && backendData.categories) {
+        components.push({
+          id: 'categories-analytics',
+          type: 'analytics',
+          props: {
+            title: 'Category Analytics',
+            data: backendData.categories,
+            metrics: ['product_count', 'total_inventory_value', 'low_stock_alerts'],
+            chartType: 'bar'
+          },
+          data: backendData.categories,
+          permissions: ['view_categories'],
+          visible_to: ['manager', 'admin'],
+          position: { section: 'main', order: 1 }
+        });
+      }
+
+      // Add admin dashboard components
+      if (userRole === 'admin' && backendData.admin_insights) {
+        components.push({
+          id: 'admin-dashboard',
+          type: 'dashboard',
+          props: {
+            title: 'Admin Dashboard',
+            insights: backendData.admin_insights,
+            widgets: ['total_products', 'total_value', 'low_stock_alerts']
+          },
+          data: backendData.admin_insights,
+          permissions: ['admin'],
+          visible_to: ['admin'],
+          position: { section: 'main', order: 0 }
         });
       }
     }
 
-    if (endpoint.includes('categories') && backendData.categories) {
-      components.push({
-        id: 'categories-analytics',
-        type: 'analytics',
-        props: {
-          title: 'Category Analytics',
-          data: backendData.categories,
-          metrics: ['product_count', 'total_inventory_value', 'low_stock_alerts'],
-          chartType: 'bar'
-        },
-        data: backendData.categories,
-        permissions: ['view_categories'],
-        visible_to: ['manager', 'admin'],
-        position: { section: 'main', order: 1 }
-      });
-    }
+    // Filter components based on visibility and permissions
+    console.log("ai-ui-client: Components before filtering:", components);
+    console.log("ai-ui-client: User role for filtering:", userRole);
+    console.log("ai-ui-client: Permissions for filtering:", permissions);
 
-    // Add admin dashboard components
-    if (userRole === 'admin' && backendData.admin_insights) {
-      components.push({
-        id: 'admin-dashboard',
-        type: 'dashboard',
-        props: {
-          title: 'Admin Dashboard',
-          insights: backendData.admin_insights,
-          widgets: ['total_products', 'total_value', 'low_stock_alerts']
-        },
-        data: backendData.admin_insights,
-        permissions: ['admin'],
-        visible_to: ['admin'],
-        position: { section: 'main', order: 0 }
-      });
-    }
+    const filteredComponents = components.filter(comp => {
+      const isVisible = comp.visible_to?.includes(userRole);
+      const hasPermissions = comp.permissions?.every(perm => permissions.includes(perm));
+      console.log(`ai-ui-client: Component ${comp.id} - isVisible: ${isVisible}, hasPermissions: ${hasPermissions}`);
+      return isVisible && hasPermissions;
+    });
+
+    console.log("ai-ui-client: Components after filtering:", filteredComponents);
 
     return {
       data: backendData,
       ui_config: {
-        layout: this.getLayoutForRole(userRole),
+        layout: layout,
         theme: {
           color: theme.color || 'blue',
           style: theme.style || 'minimal',
           components: theme.components || []
         },
-        components: components.filter(comp => 
-          comp.visible_to?.includes(userRole) && 
-          comp.permissions?.every(perm => permissions.includes(perm))
-        ),
+        components: filteredComponents,
         navigation: navigation.filter(nav => nav.visible_to.includes(userRole)),
         permissions,
         user_role: userRole
