@@ -3,6 +3,7 @@
 > **Revolutionary Concept**: **AI + DATA + POLICIES = Complete Application**
 
 This project demonstrates the future of software development: a **pure zero-code application** where **OpenAI intelligently understands user intent** and dynamically generates both **API responses** and **UI components** based on policies. No hardcoded endpoints, no controller classes, no service layers - just **AI + DATA + POLICIES** making intelligent real-time decisions.
+Blog Post: [Generative App Programming](https://futurelyconcept.com/concepts/gen_app)
 
 ## 🧠 What Makes This Revolutionary?
 
